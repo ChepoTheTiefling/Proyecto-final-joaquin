@@ -47,23 +47,23 @@ public class AutorizadosController {
         return ResponseEntity.ok("Autorizado creado con éxito");
     }
 
-    // ---------------------------------------------------------
-    // CONSULTAR AUTORIZADOS
-    // ---------------------------------------------------------
-    @GetMapping("/Consulta_Autorizado")
-    public ResponseEntity<List<Autorizados>> consultar(@RequestHeader("Authorization") String token) {
+	// ---------------------------------------------------------
+	// CONSULTAR AUTORIZADOS
+	// ---------------------------------------------------------
+	@GetMapping("/Consulta_Autorizado")
+	public ResponseEntity<?> consultar(@RequestHeader("Authorization") String token) {
 
-        String address = sesionesService.getAddressPorToken(token);
-        if (address == null)
-            return ResponseEntity.status(401).build();
+		String address = sesionesService.getAddressPorToken(token);
+		if (address == null)
+			return ResponseEntity.status(401).build();
 
-        List<Autorizados> lista = autorizadosService.getByCliente(address);
+		List<Autorizados> lista = autorizadosService.getByCliente(address);
 
-        if (lista.isEmpty())
-            return ResponseEntity.status(404).build();
+		if (lista.isEmpty())
+			return ResponseEntity.ok("No hay personas autorizadas registradas");
 
-        return ResponseEntity.ok(lista);
-    }
+		return ResponseEntity.ok(lista);
+	}
 
     // ---------------------------------------------------------
     // ACTUALIZAR AUTORIZADO

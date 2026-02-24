@@ -86,7 +86,7 @@ public class UsuariosController {
 		}
 
 		// primera fase: generar token temporal
-		if (confirmar.equals("") || confirmar == null) {
+		if (confirmar == null || confirmar.equals("")) {
 			String temp = sesionesService.crearTokenTemporal();
 			return ResponseEntity.ok("Para confirmar la eliminación usa este token: X-Confirm: " + temp);
 		}

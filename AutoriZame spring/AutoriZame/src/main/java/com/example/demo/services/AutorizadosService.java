@@ -59,9 +59,18 @@ public class AutorizadosService {
                 .orElse(null);
     }
 
+    public Autorizados getByClienteAndCorreo(String addressCliente, String correo) {
+        return autorizados.stream()
+                .filter(a ->
+                        addressCliente.equals(a.getAddres_cliente()) &&
+                                correo.equalsIgnoreCase(a.getCorreo()))
+                .findFirst()
+                .orElse(null);
+    }
+
     public boolean eliminarAutorizado(String addressCliente, String correo) {
         return autorizados.removeIf(a ->
                 addressCliente.equals(a.getAddres_cliente()) &&
-                correo.equals(a.getCorreo()));
+                correo.equalsIgnoreCase(a.getCorreo()));
     }
 }

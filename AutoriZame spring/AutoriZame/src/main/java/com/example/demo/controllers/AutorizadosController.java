@@ -15,17 +15,14 @@ public class AutorizadosController {
 
     private final SesionesService sesionesService;
     private final AutorizadosService autorizadosService;
-    private final PrivateService privateService;
     private final PedidosService pedidosService;
 
     public AutorizadosController(SesionesService sesionesService,
                                  AutorizadosService autorizadosService,
-                                 PrivateService privateService,
                                  PedidosService pedidosService) {
 
         this.sesionesService = sesionesService;
         this.autorizadosService = autorizadosService;
-        this.privateService = privateService;
         this.pedidosService = pedidosService;
     }
 
@@ -84,16 +81,17 @@ public class AutorizadosController {
         if (address == null)
             return ResponseEntity.status(401).body("Token inválido");
 
-        Autorizados a = privateService.getAutorizado(correo);
+        Autorizados a = autorizadosService.getByClienteAndCorreo(address, correo);
 
-        if (a == null || !address.equals(a.getAddres_cliente()))
+        if (a == null)
             return ResponseEntity.status(404).body("Autorizado no encontrado");
 
         switch (dato.toLowerCase()) {
             case "nombre" -> a.setNombre(mod);
             case "telefono" -> a.setTlf(mod);
             case "correo" -> {
-                if (autorizadosService.existsCorreo(mod))
+                if (!mod.equalsIgnoreCase(a.getCorreo()) &&
+                        autorizadosService.existsCorreoByCliente(address, mod))
                     return ResponseEntity.status(409).body("Correo ya en uso");
 
                 a.setCorreo(mod);
@@ -127,12 +125,12 @@ public class AutorizadosController {
             return ResponseEntity.badRequest().body("Token temporal incorrecto");
 
         // eliminar referencias en pedidos
-        Autorizados autor = privateService.getAutorizado(correo);
+        Autorizados autor = autorizadosService.getByClienteAndCorreo(address, correo);
 
         if (autor != null) {
             for (Pedidos p : pedidosService.getAll()) {
                 if (p.getAddressesAutorizados() != null) {
-                    p.getAddressesAutorizados().remove(autor.getAddres_cliente());
+                    p.getAddressesAutorizados().remove(autor.getAddress());
                 }
             }
         }

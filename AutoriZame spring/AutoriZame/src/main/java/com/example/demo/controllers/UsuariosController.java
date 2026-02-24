@@ -49,7 +49,11 @@ public class UsuariosController {
 	// MOSTRAR DATOS CLIENTE
 	// ---------------------------------------------------------
 	@GetMapping("/Mostrar_Datos_Cliente")
-	public ResponseEntity<Usuarios> mostrarDatos(@RequestParam String address) {
+	public ResponseEntity<Usuarios> mostrarDatos(@RequestHeader("Authorization") String token) {
+
+		String address = sesionesService.getAddressPorToken(token);
+		if (address == null)
+			return ResponseEntity.status(401).build();
 
 		Usuarios u = privateService.getUsuarioPorAddress(address);
 		if (u == null)

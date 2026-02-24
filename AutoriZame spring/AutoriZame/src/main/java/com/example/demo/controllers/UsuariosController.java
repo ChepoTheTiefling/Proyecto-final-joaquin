@@ -17,14 +17,17 @@ public class UsuariosController {
 	private final PrivateService privateService;
 	private final AutorizadosService autorizadosService;
 	private final PedidosService pedidosService;
+	private final CorreoService correoService;
 
 	public UsuariosController(UsuariosService usuariosService, SesionesService sesionesService,
-			PrivateService privateService, AutorizadosService autorizadosService, PedidosService pedidosService) {
+			PrivateService privateService, AutorizadosService autorizadosService, PedidosService pedidosService,
+			CorreoService correoService) {
 		this.usuariosService = usuariosService;
 		this.sesionesService = sesionesService;
 		this.privateService = privateService;
 		this.autorizadosService = autorizadosService;
 		this.pedidosService = pedidosService;
+		this.correoService = correoService;
 	}
 
 	// ---------------------------------------------------------
@@ -106,11 +109,17 @@ public class UsuariosController {
 		// ---------------------------------------------------------
 		// BORRAR USUARIO
 		// ---------------------------------------------------------
+		Usuarios usuario = privateService.getUsuarioPorAddress(address);
 		usuariosService.eliminarUsuario(address);
+		boolean correoEnviado = correoService.enviarConfirmacionEliminacion(usuario != null ? usuario.getMail() : null);
 
 		// cerrar la sesión
 		sesionesService.logoff(token);
 		sesionesService.limpiarTokenTemporal();
+
+		if (correoEnviado) {
+			return ResponseEntity.ok("Usuario eliminado. Eliminando datos asociados, cerrando sesión y enviando correo de confirmación...");
+		}
 
 		return ResponseEntity.ok("Usuario eliminado. Eliminando datos asociados y cerrando sesión...");
 	}

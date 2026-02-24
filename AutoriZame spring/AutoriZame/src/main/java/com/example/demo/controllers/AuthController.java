@@ -32,6 +32,12 @@ public class AuthController {
         return sesionesService.loginRepartidor(correo, password);
     }
 
+    @GetMapping("/Login_Admin")
+    public ResponseEntity<String> loginAdmin(@RequestParam String address,
+                                             @RequestParam String password) {
+        return sesionesService.loginAdmin(address, password);
+    }
+
     @PostMapping("/Cerrar_Sesion")
     public ResponseEntity<String> cerrarSesion(@RequestHeader("Authorization") String token,
                                                @RequestHeader(value = "X-Confirm", required = false) String confirmar) {

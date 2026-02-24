@@ -14,14 +14,16 @@ import java.util.UUID;
 public class SesionesService {
 
     private final PrivateService privateService;
+    private final AdminService adminService;
 
     // token -> address/correo
     private final Map<String, String> sesionesActivas = new HashMap<>();
     // token temporal usado para confirmaciones (borrados, cierre de sesión, etc.)
     private String temptoken = null;
 
-    public SesionesService(PrivateService privateService) {
+    public SesionesService(PrivateService privateService, AdminService adminService) {
         this.privateService = privateService;
+        this.adminService = adminService;
     }
 
     // ---------- LOGIN USUARIO ----------
@@ -55,6 +57,20 @@ public class SesionesService {
             return ResponseEntity.ok("Token de sesión: " + token + " | Notificaciones: " + r.getNotificaciones());
         }
         return ResponseEntity.status(404).body("Repartidor no encontrado o contraseña incorrecta");
+    }
+
+    // ---------- LOGIN ADMIN ----------
+    public ResponseEntity<String> loginAdmin(String address, String password) {
+        boolean valido = adminService.getAll().stream()
+                .anyMatch(a -> a.getAddress().equalsIgnoreCase(address) && a.getPassword().equals(password));
+
+        if (valido) {
+            String token = UUID.randomUUID().toString();
+            sesionesActivas.put(token, address);
+            return ResponseEntity.ok(token);
+        }
+
+        return ResponseEntity.status(401).body("Administrador o contraseña incorrectos");
     }
 
     // ---------- CERRAR SESIÓN (equivalente a Cerrar_Sesion) ----------

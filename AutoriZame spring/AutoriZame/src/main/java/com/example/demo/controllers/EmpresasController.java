@@ -31,7 +31,15 @@ public class EmpresasController {
     // CREAR EMPRESA REPARTIDORA
     // ---------------------------------------------------------
     @PostMapping("/Crear_Empresa_Repartidora")
-    public ResponseEntity<String> crear(@Valid @RequestBody Empresas e) {
+    public ResponseEntity<String> crear(@RequestHeader("Authorization") String token,
+                                        @Valid @RequestBody Empresas e) {
+
+        String adminAddr = sesionesService.getAddressPorToken(token);
+        if (adminAddr == null)
+            return ResponseEntity.status(401).body("Administrador no autenticado");
+
+        if (!adminService.isAdmin(adminAddr))
+            return ResponseEntity.status(401).body("No autorizado");
 
         if (empresasService.existsAddress(e.getAddress()))
             return ResponseEntity.status(409).body("Ya hay una empresa con esa dirección");
@@ -47,7 +55,10 @@ public class EmpresasController {
     // CONSULTAR EMPRESAS
     // ---------------------------------------------------------
     @GetMapping("/Consulta_Empresas_Reparto")
-    public ResponseEntity<?> consultarEmpresas() {
+    public ResponseEntity<?> consultarEmpresas(@RequestHeader("Authorization") String token) {
+        if (sesionesService.getAddressPorToken(token) == null)
+            return ResponseEntity.status(401).body("Usuario no autenticado");
+
         return ResponseEntity.ok(empresasService.getAll());
     }
 

@@ -108,24 +108,34 @@ public class PedidosController {
     // ---------------------------------------------------------
     @DeleteMapping("/Eliminar_Pedido")
     public ResponseEntity<String> eliminar(@RequestHeader("Authorization") String token,
+                                           @RequestHeader(value = "X-Confirm", required = false) String confirmar,
                                            @RequestParam int idPedido) {
 
-        String correo = sesionesService.getAddressPorToken(token);
-
-        boolean esRepartidor = privateService.getRepartidoresService()
-                .getAll()
-                .stream()
-                .anyMatch(r -> r.getCorreo().equals(correo));
-
-        if (!esRepartidor)
-            return ResponseEntity.badRequest().body("Repartidor no registrado");
+        String address = sesionesService.getAddressPorToken(token);
+        if (address == null)
+            return ResponseEntity.status(401).body("Cliente no autenticado");
 
         Pedidos p = privateService.getPedidoPorId(idPedido);
         if (p == null)
             return ResponseEntity.status(404).body("Pedido no encontrado");
 
-        pedidosService.eliminarPedido(idPedido);
+        if (!address.equals(p.getAddressUsuario()))
+            return ResponseEntity.status(403).body("No autorizado para cancelar este pedido");
 
-        return ResponseEntity.ok("Pedido eliminado");
+        if (p.getEstado() != Pedidos.Estado.Pendiente)
+            return ResponseEntity.badRequest().body("Solo se pueden cancelar pedidos en estado Pendiente");
+
+        if (confirmar == null || confirmar.equals("")) {
+            String temp = sesionesService.crearTokenTemporal();
+            return ResponseEntity.ok("Para confirmar la cancelación use el token: X-Confirm: " + temp);
+        }
+
+        if (!sesionesService.esTokenTemporalValido(confirmar))
+            return ResponseEntity.badRequest().body("Token temporal incorrecto");
+
+        pedidosService.eliminarPedido(idPedido);
+        sesionesService.limpiarTokenTemporal();
+
+        return ResponseEntity.ok("Pedido cancelado");
     }
 }

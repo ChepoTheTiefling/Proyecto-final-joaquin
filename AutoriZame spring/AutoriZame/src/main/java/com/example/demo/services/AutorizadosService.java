@@ -19,6 +19,24 @@ public class AutorizadosService {
         return autorizados.stream().anyMatch(a -> correo.equals(a.getCorreo()));
     }
 
+    public boolean existsCorreoByCliente(String addressCliente, String correo) {
+        return autorizados.stream().anyMatch(a ->
+                addressCliente.equals(a.getAddres_cliente()) &&
+                        correo.equalsIgnoreCase(a.getCorreo()));
+    }
+
+    public boolean existsIdentificacionByCliente(String addressCliente, String identificacion) {
+        return autorizados.stream().anyMatch(a ->
+                addressCliente.equals(a.getAddres_cliente()) &&
+                        identificacion.equalsIgnoreCase(a.getIdentificacion()));
+    }
+
+    public boolean existsAddressByCliente(String addressCliente, String addressAutorizado) {
+        return autorizados.stream().anyMatch(a ->
+                addressCliente.equals(a.getAddres_cliente()) &&
+                        addressAutorizado.equalsIgnoreCase(a.getAddress()));
+    }
+
     public void crearAutorizado(String addressCliente, Autorizados a) {
         a.setAddres_cliente(addressCliente);
         autorizados.add(a);

@@ -40,8 +40,14 @@ public class AutorizadosController {
         if (address == null)
             return ResponseEntity.status(401).body("Token inválido");
 
-        if (autorizadosService.existsCorreo(a.getCorreo()))
-            return ResponseEntity.status(409).body("Correo ya en uso");
+        if (autorizadosService.existsCorreoByCliente(address, a.getCorreo()))
+            return ResponseEntity.status(409).body("Ya existe una persona autorizada con ese correo");
+
+        if (autorizadosService.existsIdentificacionByCliente(address, a.getIdentificacion()))
+            return ResponseEntity.status(409).body("Ya existe una persona autorizada con esa identificación");
+
+        if (autorizadosService.existsAddressByCliente(address, a.getAddress()))
+            return ResponseEntity.status(409).body("Ya existe una persona autorizada con esa dirección");
 
         autorizadosService.crearAutorizado(address, a);
         return ResponseEntity.ok("Autorizado creado con éxito");

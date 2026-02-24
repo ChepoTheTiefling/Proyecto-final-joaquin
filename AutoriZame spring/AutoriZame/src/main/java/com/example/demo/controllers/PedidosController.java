@@ -1,12 +1,14 @@
 package com.example.demo.controllers;
 
-import com.example.demo.services.*;
 import com.example.demo.objects.Pedidos;
 import com.example.demo.objects.Usuarios;
+import com.example.demo.services.PedidosService;
+import com.example.demo.services.PrivateService;
+import com.example.demo.services.SesionesService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.ArrayList;
 
 @RestController
@@ -26,36 +28,24 @@ public class PedidosController {
         this.pedidosService = pedidosService;
     }
 
-    // ---------------------------------------------------------
-    // REGISTRAR PEDIDO
-    // ---------------------------------------------------------
     @PostMapping("/Registrar_Pedido")
     public ResponseEntity<String> registrar(@RequestHeader("Authorization") String token,
                                             @Valid @RequestBody Pedidos p) {
 
         String address = sesionesService.getAddressPorToken(token);
         if (address == null)
-            return ResponseEntity.status(401).body("Cliente no válido");
-
-        if (p.getAddressesAutorizados() == null)
-            p.setAddressesAutorizados(new ArrayList<>());
+            return ResponseEntity.status(401).body("Cliente no valido");
 
         p.setAddressUsuario(address);
 
-        // validación igual que el código original
-        if (!p.getAddressUsuario().equals(p.getDestinatario()) &&
-            !p.getAddressesAutorizados().contains(p.getDestinatario())) {
-
-            return ResponseEntity.badRequest().body("El destinatario debe ser el cliente o un usuario autorizado (address)");
+        if (privateService.getAutorizado(address, p.getIdAutorizado()) == null) {
+            return ResponseEntity.badRequest().body("El ID de autorizado no pertenece al cliente autenticado");
         }
 
         pedidosService.registrarPedido(address, p);
-        return ResponseEntity.ok("Pedido registrado con éxito");
+        return ResponseEntity.ok("Pedido registrado con exito");
     }
 
-    // ---------------------------------------------------------
-    // CONSULTAR PEDIDOS DEL USUARIO
-    // ---------------------------------------------------------
     @GetMapping("/Consultar_Pedidos")
     public ResponseEntity<?> consultar(@RequestHeader("Authorization") String token) {
 
@@ -67,9 +57,6 @@ public class PedidosController {
         return ResponseEntity.ok(pedidosService.getByUsuario(address));
     }
 
-    // ---------------------------------------------------------
-    // CAMBIAR ESTADO PEDIDO
-    // ---------------------------------------------------------
     @PatchMapping("/Cambiar_Estado_Pedido")
     public ResponseEntity<String> cambiarEstado(@RequestHeader("Authorization") String token,
                                                 @RequestParam int id,
@@ -83,12 +70,20 @@ public class PedidosController {
                 .anyMatch(r -> r.getCorreo().equals(correo));
 
         if (!esRepartidor)
-            return ResponseEntity.badRequest().body("Repartidor no registrado");
+            return ResponseEntity.status(403).body("Repartidor no autorizado");
 
         Pedidos p = privateService.getPedidoPorId(id);
 
         if (p == null)
             return ResponseEntity.status(404).body("Pedido no encontrado");
+        if (p.getMailRepartidor() == null || !correo.equals(p.getMailRepartidor()))
+            return ResponseEntity.status(403).body("Solo el repartidor asignado puede cambiar el estado");
+
+        boolean transicionValida =
+                (p.getEstado() == Pedidos.Estado.Pendiente && estado == Pedidos.Estado.Procesando) ||
+                        (p.getEstado() == Pedidos.Estado.Procesando && estado == Pedidos.Estado.Entregado);
+        if (!transicionValida)
+            return ResponseEntity.badRequest().body("Transicion de estado no valida");
 
         p.setEstado(estado);
 
@@ -103,9 +98,6 @@ public class PedidosController {
         return ResponseEntity.ok("Estado actualizado");
     }
 
-    // ---------------------------------------------------------
-    // ELIMINAR PEDIDO
-    // ---------------------------------------------------------
     @DeleteMapping("/Eliminar_Pedido")
     public ResponseEntity<String> eliminar(@RequestHeader("Authorization") String token,
                                            @RequestHeader(value = "X-Confirm", required = false) String confirmar,
@@ -126,16 +118,17 @@ public class PedidosController {
             return ResponseEntity.badRequest().body("Solo se pueden cancelar pedidos en estado Pendiente");
 
         if (confirmar == null || confirmar.equals("")) {
-            String temp = sesionesService.crearTokenTemporal();
-            return ResponseEntity.ok("Para confirmar la cancelación use el token: X-Confirm: " + temp);
+            String temp = sesionesService.crearTokenTemporal(token);
+            return ResponseEntity.ok("Para confirmar la cancelacion use el token: X-Confirm: " + temp);
         }
 
-        if (!sesionesService.esTokenTemporalValido(confirmar))
+        if (!sesionesService.esTokenTemporalValido(token, confirmar))
             return ResponseEntity.badRequest().body("Token temporal incorrecto");
 
         pedidosService.eliminarPedido(idPedido);
-        sesionesService.limpiarTokenTemporal();
+        sesionesService.limpiarTokenTemporal(token);
 
         return ResponseEntity.ok("Pedido cancelado");
     }
 }
+

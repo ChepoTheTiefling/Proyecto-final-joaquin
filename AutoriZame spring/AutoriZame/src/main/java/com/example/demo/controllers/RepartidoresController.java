@@ -113,11 +113,11 @@ public class RepartidoresController {
             return ResponseEntity.status(401).body("Empresa no autenticada");
 
         if (confirmar == null || confirmar.equals("")) {
-            String temp = sesionesService.crearTokenTemporal();
+            String temp = sesionesService.crearTokenTemporal(token);
             return ResponseEntity.ok("Para confirmar la eliminación, introduzca el token: X-Confirm: " + temp);
         }
 
-        if (!sesionesService.esTokenTemporalValido(confirmar))
+        if (!sesionesService.esTokenTemporalValido(token, confirmar))
             return ResponseEntity.badRequest().body("Token temporal incorrecto");
 
         // borrar asignación en pedidos
@@ -129,7 +129,7 @@ public class RepartidoresController {
 
         boolean eliminado = repartidoresService.eliminarRepartidor(correo, empresa.getAddress());
 
-        sesionesService.limpiarTokenTemporal();
+        sesionesService.limpiarTokenTemporal(token);
 
         if (eliminado)
             return ResponseEntity.ok("Repartidor eliminado");
@@ -154,10 +154,18 @@ public class RepartidoresController {
         Repartidores r = privateService.getRepartidor(correo);
         if (r == null)
             return ResponseEntity.badRequest().body("No se encuentra el repartidor");
+        if (!empresa.getAddress().equals(r.getAddress_empresa()))
+            return ResponseEntity.badRequest().body("El repartidor no pertenece a la empresa");
+        if (r.getEstado() != Repartidores.Estado.Activo)
+            return ResponseEntity.badRequest().body("El repartidor no esta activo");
 
         Pedidos p = privateService.getPedidoPorId(idPedido);
         if (p == null)
             return ResponseEntity.badRequest().body("No se encuentra el pedido");
+        if (p.getEstado() != Pedidos.Estado.Pendiente)
+            return ResponseEntity.badRequest().body("Solo se pueden asignar pedidos en estado Pendiente");
+        if (p.getMailRepartidor() != null && privateService.getRepartidor(p.getMailRepartidor()) != null)
+            return ResponseEntity.badRequest().body("El pedido ya tiene un repartidor asignado");
 
         p.setMailRepartidor(correo);
         privateService.notificacionesRepartidor("Pedido con id " + idPedido + " asignado", correo);
@@ -165,3 +173,4 @@ public class RepartidoresController {
         return ResponseEntity.ok("Repartidor asignado con éxito");
     }
 }
+

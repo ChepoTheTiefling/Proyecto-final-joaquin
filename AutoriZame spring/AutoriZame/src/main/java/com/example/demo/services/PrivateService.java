@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.*;
+import com.example.demo.exceptions.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -47,7 +48,11 @@ public class PrivateService {
 
     public Usuarios getUsuarioPorAddress(String address) {
         if (address == null) return null;
-        return usuariosService.getByAddress(address);
+        try {
+            return usuariosService.getByAddress(address);
+        } catch (ResourceNotFoundException ex) {
+            return null;
+        }
     }
 
     public Empresas getEmpresaPorAddress(String address) {
@@ -64,9 +69,9 @@ public class PrivateService {
         return pedidosService.getById(id);
     }
 
-    public Autorizados getAutorizado(String correo) {
-        if (correo == null) return null;
-        return autorizadosService.getByCorreo(correo);
+    public Autorizados getAutorizado(String addressCliente, String identificacion) {
+        if (addressCliente == null || identificacion == null) return null;
+        return autorizadosService.getByClienteAndIdentificacion(addressCliente, identificacion);
     }
 
     public boolean correoExiste(String mail) {
@@ -75,13 +80,10 @@ public class PrivateService {
         boolean enClientes = usuariosService.getAll().stream()
                 .anyMatch(u -> mail.equals(u.getMail()));
 
-        boolean enAutorizados = autorizadosService.getAll().stream()
-                .anyMatch(a -> mail.equals(a.getCorreo()));
-
         boolean enRepartidores = repartidoresService.getAll().stream()
                 .anyMatch(r -> mail.equals(r.getCorreo()));
 
-        return enClientes || enAutorizados || enRepartidores;
+        return enClientes || enRepartidores;
     }
 
     public void notificacionesRepartidor(String notif, String correo) {

@@ -18,8 +18,8 @@ public class SesionesService {
 
     // token -> address/correo
     private final Map<String, String> sesionesActivas = new HashMap<>();
-    // token temporal usado para confirmaciones (borrados, cierre de sesión, etc.)
-    private String temptoken = null;
+    // token de sesion -> token temporal de confirmacion
+    private final Map<String, String> tokensTemporales = new HashMap<>();
 
     public SesionesService(PrivateService privateService, AdminService adminService) {
         this.privateService = privateService;
@@ -32,9 +32,9 @@ public class SesionesService {
         if (u != null && password != null && password.equals(u.getPassword())) {
             String token = UUID.randomUUID().toString();
             sesionesActivas.put(token, address);
-            return ResponseEntity.ok("Token de sesión: " + token + " | Notificaciones: " + u.getNotificaciones());
+            return ResponseEntity.ok("Token de sesion: " + token + " | Notificaciones: " + u.getNotificaciones());
         }
-        return ResponseEntity.status(401).body("Usuario o contraseña incorrectos");
+        return ResponseEntity.status(401).body("Usuario o contrasena incorrectos");
     }
 
     // ---------- LOGIN EMPRESA ----------
@@ -45,7 +45,7 @@ public class SesionesService {
             sesionesActivas.put(token, address);
             return ResponseEntity.ok(token);
         }
-        return ResponseEntity.status(401).body("Empresa o contraseña incorrectos");
+        return ResponseEntity.status(401).body("Empresa o contrasena incorrectos");
     }
 
     // ---------- LOGIN REPARTIDOR ----------
@@ -54,9 +54,9 @@ public class SesionesService {
         if (r != null && password != null && password.equals(r.getPassword())) {
             String token = UUID.randomUUID().toString();
             sesionesActivas.put(token, correo);
-            return ResponseEntity.ok("Token de sesión: " + token + " | Notificaciones: " + r.getNotificaciones());
+            return ResponseEntity.ok("Token de sesion: " + token + " | Notificaciones: " + r.getNotificaciones());
         }
-        return ResponseEntity.status(404).body("Repartidor no encontrado o contraseña incorrecta");
+        return ResponseEntity.status(401).body("Repartidor o contrasena incorrectos");
     }
 
     // ---------- LOGIN ADMIN ----------
@@ -70,32 +70,30 @@ public class SesionesService {
             return ResponseEntity.ok(token);
         }
 
-        return ResponseEntity.status(401).body("Administrador o contraseña incorrectos");
+        return ResponseEntity.status(401).body("Administrador o contrasena incorrectos");
     }
 
-    // ---------- CERRAR SESIÓN (equivalente a Cerrar_Sesion) ----------
+    // ---------- CERRAR SESION (equivalente a Cerrar_Sesion) ----------
     public ResponseEntity<String> cerrarSesion(String token, String confirmarHeader) {
         String address = sesionesActivas.get(token);
         if (address == null) {
-            return ResponseEntity.status(401).body("Token inválido");
+            return ResponseEntity.status(401).body("Token invalido");
         }
 
         if (confirmarHeader == null || confirmarHeader.equals("")) {
-            // primera llamada: generamos token temporal
-            temptoken = UUID.randomUUID().toString();
-            return ResponseEntity.ok("Para confirmar la eliminación usa este token: X-Confirm: " + temptoken);
+            String tokenTemporal = crearTokenTemporal(token);
+            return ResponseEntity.ok("Para confirmar la eliminacion usa este token: X-Confirm: " + tokenTemporal);
         }
 
-        if (confirmarHeader.equals(temptoken)) {
+        if (esTokenTemporalValido(token, confirmarHeader)) {
             logoff(token);
-            temptoken = null;
-            return ResponseEntity.ok("Sesión cerrada");
+            return ResponseEntity.ok("Sesion cerrada");
         }
 
-        return ResponseEntity.badRequest().body("El token de confirmación es incorrecto");
+        return ResponseEntity.badRequest().body("El token de confirmacion es incorrecto");
     }
 
-    // ---------- UTILIDADES DE SESIÓN USADAS POR OTROS SERVICIOS O CONTROLLERS ----------
+    // ---------- UTILIDADES DE SESION USADAS POR OTROS SERVICIOS O CONTROLLERS ----------
 
     public String getAddressPorToken(String token) {
         return sesionesActivas.get(token);
@@ -105,20 +103,24 @@ public class SesionesService {
         return sesionesActivas.containsKey(token);
     }
 
-    public String crearTokenTemporal() {
-        temptoken = UUID.randomUUID().toString();
-        return temptoken;
+    public String crearTokenTemporal(String tokenSesion) {
+        String tokenTemporal = UUID.randomUUID().toString();
+        tokensTemporales.put(tokenSesion, tokenTemporal);
+        return tokenTemporal;
     }
 
-    public boolean esTokenTemporalValido(String confirmar) {
-        return temptoken != null && temptoken.equals(confirmar);
+    public boolean esTokenTemporalValido(String tokenSesion, String confirmar) {
+        String tokenTemporalGuardado = tokensTemporales.get(tokenSesion);
+        return tokenTemporalGuardado != null && tokenTemporalGuardado.equals(confirmar);
     }
 
-    public void limpiarTokenTemporal() {
-        temptoken = null;
+    public void limpiarTokenTemporal(String tokenSesion) {
+        tokensTemporales.remove(tokenSesion);
     }
 
     public void logoff(String token) {
         sesionesActivas.remove(token);
+        limpiarTokenTemporal(token);
     }
 }
+

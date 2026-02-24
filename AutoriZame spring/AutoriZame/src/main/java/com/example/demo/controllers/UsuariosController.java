@@ -59,12 +59,14 @@ public class UsuariosController {
 		if (u == null)
 			return ResponseEntity.status(404).build();
 
-		// misma lógica que tu código original
-		u.setPassword("***********");
-		if (u.getNotificaciones() == null)
-			u.setNotificaciones(new ArrayList<>());
+		Usuarios visible = new Usuarios();
+		visible.setNombre(u.getNombre());
+		visible.setMail(u.getMail());
+		visible.setAddress(u.getAddress());
+		visible.setPassword("***********");
+		visible.setNotificaciones(u.getNotificaciones() == null ? new ArrayList<>() : u.getNotificaciones());
 
-		return ResponseEntity.ok(u);
+		return ResponseEntity.ok(visible);
 	}
 
 	// ---------------------------------------------------------
@@ -80,13 +82,13 @@ public class UsuariosController {
 		}
 
 		// primera fase: generar token temporal
-		if (confirmar.equals("") || confirmar == null) {
-			String temp = sesionesService.crearTokenTemporal();
+		if (confirmar == null || confirmar.equals("")) {
+			String temp = sesionesService.crearTokenTemporal(token);
 			return ResponseEntity.ok("Para confirmar la eliminación usa este token: X-Confirm: " + temp);
 		}
 
 		// comprobar token temporal
-		if (!sesionesService.esTokenTemporalValido(confirmar)) {
+		if (!sesionesService.esTokenTemporalValido(token, confirmar)) {
 			return ResponseEntity.badRequest().body("El token de confirmación es incorrecto");
 		}
 
@@ -98,7 +100,7 @@ public class UsuariosController {
 		// ---------------------------------------------------------
 		// BORRAR AUTORIZADOS ASOCIADOS
 		// ---------------------------------------------------------
-		autorizadosService.getAll().removeIf(a -> address.equals(a.getAddres_cliente()));
+		autorizadosService.getAll().removeIf(a -> address.equals(a.getAddressCliente()));
 
 		// ---------------------------------------------------------
 		// BORRAR USUARIO
@@ -107,7 +109,7 @@ public class UsuariosController {
 
 		// cerrar la sesión
 		sesionesService.logoff(token);
-		sesionesService.limpiarTokenTemporal();
+		sesionesService.limpiarTokenTemporal(token);
 
 		return ResponseEntity.ok("Usuario eliminado. Eliminando datos asociados y cerrando sesión...");
 	}
@@ -150,3 +152,6 @@ public class UsuariosController {
 		return ResponseEntity.ok("Dato modificado con éxito");
 	}
 }
+
+
+

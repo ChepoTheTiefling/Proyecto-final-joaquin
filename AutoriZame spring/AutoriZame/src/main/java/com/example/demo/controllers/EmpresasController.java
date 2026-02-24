@@ -39,7 +39,7 @@ public class EmpresasController {
             return ResponseEntity.status(401).body("Administrador no autenticado");
 
         if (!adminService.isAdmin(adminAddr))
-            return ResponseEntity.status(401).body("No autorizado");
+            return ResponseEntity.status(403).body("No autorizado");
 
         if (empresasService.existsAddress(e.getAddress()))
             return ResponseEntity.status(409).body("Ya hay una empresa con esa dirección");
@@ -77,7 +77,7 @@ public class EmpresasController {
             return ResponseEntity.status(401).body("Administrador no encontrado");
 
         if (!adminService.isAdmin(adminAddr))
-            return ResponseEntity.status(401).body("Administrador no autorizado");
+            return ResponseEntity.status(403).body("Administrador no autorizado");
 
         Empresas e = empresasService.getByAddress(address);
         if (e == null)
@@ -90,8 +90,8 @@ public class EmpresasController {
 
                 e.setNombre(mod);
             }
-            case "email" -> e.setMail(mod);
-            case "address" -> e.setAddress(mod);
+            case "email", "correo" -> e.setMail(mod);
+            case "telefono", "tlf" -> e.setTlf(mod);
             default -> {
                 return ResponseEntity.status(400).body("Dato incorrecto");
             }
@@ -114,14 +114,14 @@ public class EmpresasController {
             return ResponseEntity.status(401).body("Administrador no encontrado");
 
         if (!adminService.isAdmin(adminAddr))
-            return ResponseEntity.status(401).body("No autorizado");
+            return ResponseEntity.status(403).body("No autorizado");
 
         if (confirmar == null || confirmar.equals("")) {
-            String temp = sesionesService.crearTokenTemporal();
+            String temp = sesionesService.crearTokenTemporal(token);
             return ResponseEntity.ok("Para confirmar la eliminación utilice el token: X-Confirm: " + temp);
         }
 
-        if (!sesionesService.esTokenTemporalValido(confirmar))
+        if (!sesionesService.esTokenTemporalValido(token, confirmar))
             return ResponseEntity.badRequest().body("Token temporal incorrecto");
 
         // borrar repartidores asociados
@@ -129,7 +129,7 @@ public class EmpresasController {
 
         boolean eliminado = empresasService.eliminarEmpresa(address);
 
-        sesionesService.limpiarTokenTemporal();
+        sesionesService.limpiarTokenTemporal(token);
 
         if (eliminado)
             return ResponseEntity.ok("Empresa eliminada");
@@ -137,3 +137,5 @@ public class EmpresasController {
         return ResponseEntity.status(404).body("Empresa no encontrada");
     }
 }
+
+

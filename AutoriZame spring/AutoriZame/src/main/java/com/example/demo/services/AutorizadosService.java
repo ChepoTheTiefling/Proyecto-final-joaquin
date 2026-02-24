@@ -15,35 +15,38 @@ public class AutorizadosService {
         return autorizados;
     }
 
-    public boolean existsCorreo(String correo) {
-        return autorizados.stream().anyMatch(a -> correo.equals(a.getCorreo()));
+    public boolean existsIdentificacionByCliente(String addressCliente, String identificacion) {
+        return autorizados.stream().anyMatch(a ->
+                addressCliente.equals(a.getAddressCliente()) &&
+                identificacion.equalsIgnoreCase(a.getIdentificacion()));
     }
 
     public void crearAutorizado(String addressCliente, Autorizados a) {
-        a.setAddres_cliente(addressCliente);
+        a.setAddressCliente(addressCliente);
         autorizados.add(a);
     }
 
     public List<Autorizados> getByCliente(String addressCliente) {
         List<Autorizados> res = new ArrayList<>();
         for (Autorizados a : autorizados) {
-            if (addressCliente.equals(a.getAddres_cliente())) {
+            if (addressCliente.equals(a.getAddressCliente())) {
                 res.add(a);
             }
         }
         return res;
     }
 
-    public Autorizados getByCorreo(String correo) {
+    public Autorizados getByClienteAndIdentificacion(String addressCliente, String identificacion) {
         return autorizados.stream()
-                .filter(a -> correo.equals(a.getCorreo()))
+                .filter(a -> addressCliente.equals(a.getAddressCliente())
+                        && identificacion.equalsIgnoreCase(a.getIdentificacion()))
                 .findFirst()
                 .orElse(null);
     }
 
-    public boolean eliminarAutorizado(String addressCliente, String correo) {
+    public boolean eliminarAutorizado(String addressCliente, String identificacion) {
         return autorizados.removeIf(a ->
-                addressCliente.equals(a.getAddres_cliente()) &&
-                correo.equals(a.getCorreo()));
+                addressCliente.equals(a.getAddressCliente()) &&
+                identificacion.equalsIgnoreCase(a.getIdentificacion()));
     }
 }

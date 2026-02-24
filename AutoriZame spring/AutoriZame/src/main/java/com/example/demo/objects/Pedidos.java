@@ -24,6 +24,8 @@ public class Pedidos {
 
     // Se asigna cuando la empresa vincula un repartidor al pedido.
     private String mailRepartidor;
+    private Long tokenIdNft;
+    private String codigoAutorizacion;
 
     public enum Estado {
         Pendiente,
@@ -79,6 +81,22 @@ public class Pedidos {
 
     public void setMailRepartidor(String mailRepartidor) {
         this.mailRepartidor = mailRepartidor;
+    }
+
+    public Long getTokenIdNft() {
+        return tokenIdNft;
+    }
+
+    public void setTokenIdNft(Long tokenIdNft) {
+        this.tokenIdNft = tokenIdNft;
+    }
+
+    public String getCodigoAutorizacion() {
+        return codigoAutorizacion;
+    }
+
+    public void setCodigoAutorizacion(String codigoAutorizacion) {
+        this.codigoAutorizacion = codigoAutorizacion;
     }
 
     public Estado getEstado() {

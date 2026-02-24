@@ -2,6 +2,8 @@ package com.example.demo.controllers;
 
 import com.example.demo.objects.Pedidos;
 import com.example.demo.objects.Usuarios;
+import com.example.demo.objects.NftAutorizacion;
+import com.example.demo.services.NftAutorizacionService;
 import com.example.demo.services.PedidosService;
 import com.example.demo.services.PrivateService;
 import com.example.demo.services.SesionesService;
@@ -18,14 +20,17 @@ public class PedidosController {
     private final SesionesService sesionesService;
     private final PrivateService privateService;
     private final PedidosService pedidosService;
+    private final NftAutorizacionService nftAutorizacionService;
 
     public PedidosController(SesionesService sesionesService,
                              PrivateService privateService,
-                             PedidosService pedidosService) {
+                             PedidosService pedidosService,
+                             NftAutorizacionService nftAutorizacionService) {
 
         this.sesionesService = sesionesService;
         this.privateService = privateService;
         this.pedidosService = pedidosService;
+        this.nftAutorizacionService = nftAutorizacionService;
     }
 
     @PostMapping("/Registrar_Pedido")
@@ -43,6 +48,14 @@ public class PedidosController {
         }
 
         pedidosService.registrarPedido(address, p);
+        NftAutorizacion nft = nftAutorizacionService.mintParaPedido(
+                p.getId(),
+                address,
+                p.getIdAutorizado(),
+                p.getDireccionEntrega(),
+                p.getDescripcion());
+        p.setTokenIdNft(nft.getTokenId());
+        p.setCodigoAutorizacion(nft.getCodigoNumerico());
         return ResponseEntity.ok("Pedido registrado con exito");
     }
 
@@ -55,6 +68,52 @@ public class PedidosController {
             return ResponseEntity.status(401).build();
 
         return ResponseEntity.ok(pedidosService.getByUsuario(address));
+    }
+
+    @PostMapping("/Transferir_Autorizacion_NFT")
+    public ResponseEntity<String> transferirNft(@RequestHeader("Authorization") String token,
+                                                @RequestParam long tokenId,
+                                                @RequestParam String toAddress) {
+        String fromAddress = sesionesService.getAddressPorToken(token);
+        if (!esSesionConAddress(fromAddress)) {
+            return ResponseEntity.status(401).body("Sesion no valida para operar NFT");
+        }
+
+        try {
+            nftAutorizacionService.transferirAutorizacion(tokenId, fromAddress, toAddress);
+            return ResponseEntity.ok("NFT transferido");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/Quemar_Autorizacion_NFT")
+    public ResponseEntity<String> quemarNft(@RequestHeader("Authorization") String token,
+                                            @RequestParam long tokenId) {
+        String ownerAddress = sesionesService.getAddressPorToken(token);
+        if (!esSesionConAddress(ownerAddress)) {
+            return ResponseEntity.status(401).body("Sesion no valida para operar NFT");
+        }
+
+        try {
+            nftAutorizacionService.quemarAutorizacion(tokenId, ownerAddress);
+            return ResponseEntity.ok("NFT quemado");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/Consultar_Autorizacion_NFT")
+    public ResponseEntity<?> consultarNft(@RequestParam long tokenId) {
+        try {
+            return ResponseEntity.ok(nftAutorizacionService.getToken(tokenId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(404).body(ex.getMessage());
+        }
     }
 
     @PatchMapping("/Cambiar_Estado_Pedido")
@@ -129,6 +188,10 @@ public class PedidosController {
         sesionesService.limpiarTokenTemporal(token);
 
         return ResponseEntity.ok("Pedido cancelado");
+    }
+
+    private boolean esSesionConAddress(String sessionValue) {
+        return sessionValue != null && sessionValue.matches("^0x[a-fA-F0-9]{40}$");
     }
 }
 

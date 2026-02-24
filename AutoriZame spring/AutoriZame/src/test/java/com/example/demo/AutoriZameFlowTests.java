@@ -8,6 +8,7 @@ import com.example.demo.controllers.RepartidoresController;
 import com.example.demo.controllers.UsuariosController;
 import com.example.demo.objects.Autorizados;
 import com.example.demo.objects.Empresas;
+import com.example.demo.objects.NftAutorizacion;
 import com.example.demo.objects.Pedidos;
 import com.example.demo.objects.Repartidores;
 import com.example.demo.objects.Usuarios;
@@ -18,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -160,6 +162,107 @@ class AutoriZameFlowTests {
         assertEquals(400, pedidosController.cambiarEstado(rep1Token, 1, Pedidos.Estado.Entregado).getStatusCode().value());
         assertEquals(200, pedidosController.cambiarEstado(rep1Token, 1, Pedidos.Estado.Procesando).getStatusCode().value());
         assertEquals(200, pedidosController.cambiarEstado(rep1Token, 1, Pedidos.Estado.Entregado).getStatusCode().value());
+    }
+
+    @Test
+    void flujoNftMintTransferBurn() {
+        Usuarios cliente = new Usuarios();
+        cliente.setNombre("Cliente NFT");
+        cliente.setMail("clientenft@test.com");
+        cliente.setPassword("Password!A");
+        cliente.setAddress("0x9999999999999999999999999999999999999999");
+        assertEquals(200, usuariosController.crearUsuario(cliente).getStatusCode().value());
+        String tokenCliente = loginUsuario(cliente.getAddress(), cliente.getPassword());
+
+        Usuarios receptor = new Usuarios();
+        receptor.setNombre("Receptor NFT");
+        receptor.setMail("receptornft@test.com");
+        receptor.setPassword("Password!A");
+        receptor.setAddress("0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        assertEquals(200, usuariosController.crearUsuario(receptor).getStatusCode().value());
+        String tokenReceptor = loginUsuario(receptor.getAddress(), receptor.getPassword());
+
+        Autorizados autorizado = new Autorizados();
+        autorizado.setNombre("Autorizado NFT");
+        autorizado.setIdentificacion("AUT-NFT-01");
+        autorizado.setTlf("612345671");
+        autorizado.setAddress("0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+        assertEquals(200, autorizadosController.crear(autorizado, tokenCliente).getStatusCode().value());
+
+        Pedidos pedido = new Pedidos();
+        pedido.setDescripcion("Pedido NFT");
+        pedido.setIdAutorizado("AUT-NFT-01");
+        pedido.setDireccionEntrega("Avenida NFT 42");
+        assertEquals(200, pedidosController.registrar(tokenCliente, pedido).getStatusCode().value());
+
+        ResponseEntity<?> consulta = pedidosController.consultar(tokenCliente);
+        @SuppressWarnings("unchecked")
+        List<Pedidos> pedidos = (List<Pedidos>) consulta.getBody();
+        assertNotNull(pedidos);
+        Long tokenIdNft = pedidos.get(0).getTokenIdNft();
+        assertNotNull(tokenIdNft);
+
+        ResponseEntity<?> detalleNft = pedidosController.consultarNft(tokenIdNft);
+        assertEquals(200, detalleNft.getStatusCode().value());
+        NftAutorizacion nft = (NftAutorizacion) detalleNft.getBody();
+        assertNotNull(nft);
+        assertNotNull(nft.getChainTokenId());
+        assertNotNull(nft.getMintTxHash());
+
+        assertEquals(200, pedidosController.transferirNft(tokenCliente, tokenIdNft, receptor.getAddress()).getStatusCode().value());
+        assertEquals(200, pedidosController.quemarNft(tokenReceptor, tokenIdNft).getStatusCode().value());
+    }
+
+    @Test
+    void flujoNftErroresTransferYBurn() {
+        Usuarios cliente = new Usuarios();
+        cliente.setNombre("Cliente Error NFT");
+        cliente.setMail("clienteerrornft@test.com");
+        cliente.setPassword("Password!A");
+        cliente.setAddress("0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
+        assertEquals(200, usuariosController.crearUsuario(cliente).getStatusCode().value());
+        String tokenCliente = loginUsuario(cliente.getAddress(), cliente.getPassword());
+
+        Usuarios otro = new Usuarios();
+        otro.setNombre("Otro Usuario");
+        otro.setMail("otrousuarionft@test.com");
+        otro.setPassword("Password!A");
+        otro.setAddress("0xDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
+        assertEquals(200, usuariosController.crearUsuario(otro).getStatusCode().value());
+        String tokenOtro = loginUsuario(otro.getAddress(), otro.getPassword());
+
+        Autorizados autorizado = new Autorizados();
+        autorizado.setNombre("Autorizado Error");
+        autorizado.setIdentificacion("AUT-ERR-01");
+        autorizado.setTlf("612345672");
+        autorizado.setAddress("0xEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+        assertEquals(200, autorizadosController.crear(autorizado, tokenCliente).getStatusCode().value());
+
+        Pedidos pedido = new Pedidos();
+        pedido.setDescripcion("Pedido Error NFT");
+        pedido.setIdAutorizado("AUT-ERR-01");
+        pedido.setDireccionEntrega("Calle Error 1");
+        assertEquals(200, pedidosController.registrar(tokenCliente, pedido).getStatusCode().value());
+
+        @SuppressWarnings("unchecked")
+        Long tokenIdNft = ((java.util.List<Pedidos>) pedidosController.consultar(tokenCliente).getBody()).get(0).getTokenIdNft();
+        assertNotNull(tokenIdNft);
+
+        // No-owner no puede transferir.
+        assertEquals(403, pedidosController.transferirNft(tokenOtro, tokenIdNft, otro.getAddress()).getStatusCode().value());
+        // Owner transfiere correctamente.
+        assertEquals(200, pedidosController.transferirNft(tokenCliente, tokenIdNft, otro.getAddress()).getStatusCode().value());
+        // Ya no owner no puede quemar.
+        assertEquals(403, pedidosController.quemarNft(tokenCliente, tokenIdNft).getStatusCode().value());
+        // Owner actual si puede quemar.
+        assertEquals(200, pedidosController.quemarNft(tokenOtro, tokenIdNft).getStatusCode().value());
+        // Token quemado no debe permitir nuevas transferencias.
+        assertEquals(403, pedidosController.transferirNft(tokenOtro, tokenIdNft, cliente.getAddress()).getStatusCode().value());
+    }
+
+    @Test
+    void consultarNftInexistenteDevuelve404() {
+        assertEquals(404, pedidosController.consultarNft(9_999_999L).getStatusCode().value());
     }
 
     @Test

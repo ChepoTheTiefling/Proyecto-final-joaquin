@@ -38,6 +38,7 @@ contract AutoriZameToken is
     error PedidoNoPerteneceAEmpresa();
     error PedidoNoPerteneceACliente();
     error PedidoNoPerteneceARepartidor();
+    error ErrorPersonalizado(string motivo);
 
     // Eventos
     event ClienteRegistrado(address cliente);
@@ -46,6 +47,17 @@ contract AutoriZameToken is
     event PedidoAsignado(uint256 tokenId, address empresa, address repartidor);
     event EstadoPedidoActualizado(uint256 tokenId, string nuevoEstado);
     event PedidoEntregado(uint256 tokenId);
+    event AutorizacionTransferida(
+        uint256 idPedido,
+        uint256 idToken,
+        address from,
+        address to
+    );
+    event AutorizacionQuemada(
+        uint256 idPedido,
+        uint256 idToken,
+        address by
+    );
 
     // Structs
     struct Cliente {
@@ -465,6 +477,38 @@ contract AutoriZameToken is
 
         pedido.estado = EstadoPedido.Cancelado;
         _burn(tokenId);
+    }
+
+    // Transferencia controlada de autorizacion NFT (cliente/autorizado -> autorizado/repartidor)
+    function transferirAutorizacion(
+        uint256 tokenId,
+        address to
+    ) public nonReentrant {
+        if (to == address(0)) revert DireccionInvalida();
+        if (_ownerOf(tokenId) == address(0))
+            revert ErrorPersonalizado("Token no existe");
+
+        address actualOwner = ownerOf(tokenId);
+        if (actualOwner != msg.sender) {
+            revert ErrorPersonalizado("El token no pertenece al invocador");
+        }
+
+        safeTransferFrom(msg.sender, to, tokenId);
+        emit AutorizacionTransferida(tokenId, tokenId, msg.sender, to);
+    }
+
+    // Quema controlada de autorizacion NFT (repartidor owner del token)
+    function quemarAutorizacion(
+        uint256 tokenId
+    ) public soloRepartidor nonReentrant {
+        if (_ownerOf(tokenId) == address(0))
+            revert ErrorPersonalizado("Token no existe");
+        if (ownerOf(tokenId) != msg.sender) {
+            revert ErrorPersonalizado("Solo el owner puede quemar el token");
+        }
+
+        _burn(tokenId);
+        emit AutorizacionQuemada(tokenId, tokenId, msg.sender);
     }
 
     // Para convertir enum a string

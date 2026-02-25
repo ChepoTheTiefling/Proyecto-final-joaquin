@@ -1,11 +1,6 @@
 package com.example.demo.objects;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-
-import org.hibernate.validator.constraints.ISBN;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -13,7 +8,6 @@ import jakarta.validation.constraints.*;
 public class Pedidos {
 	private int id;
 	
-	@NotBlank
 	@Pattern(
 	        regexp = "^0x[a-fA-F0-9]{40}$",
 	        message = "La dirección debe ser una dirección válida de Ethereum"
@@ -30,7 +24,6 @@ public class Pedidos {
 	@NotBlank
 	private String descripcion;
 	
-	@NotBlank
 	@Email
 	private String mailRepartidor;
 	

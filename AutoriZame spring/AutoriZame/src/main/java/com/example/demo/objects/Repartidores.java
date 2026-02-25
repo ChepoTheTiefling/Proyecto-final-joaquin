@@ -19,7 +19,6 @@ public class Repartidores {
 			)
 	private String tlf;
 	
-	@NotBlank(message = "La dirección es obligatoria")
     @Pattern(
         regexp = "^0x[a-fA-F0-9]{40}$",
         message = "La dirección debe ser una dirección válida de Ethereum"

@@ -95,6 +95,9 @@ public class PedidosController {
         if (p == null)
             return ResponseEntity.status(404).body("Pedido no encontrado");
 
+        if (p.getMailRepartidor() == null || !correo.equalsIgnoreCase(p.getMailRepartidor()))
+            return ResponseEntity.status(403).body("Solo el repartidor asignado puede cambiar el estado del pedido");
+
         p.setEstado(estado);
 
         Usuarios u = privateService.getUsuarioPorAddress(p.getAddressUsuario());

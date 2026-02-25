@@ -32,6 +32,8 @@ contract AutoriZameToken is
     error IdentificacionDuplicada();
     error EmpresaNoExiste();
     error RepartidorNoActivo();
+    error EmpresaDuplicada();
+    error RepartidorDuplicado();
     error EstadoInvalido();
     error NoPendiente();
     error DireccionInvalida();
@@ -112,6 +114,16 @@ contract AutoriZameToken is
     mapping(uint256 => Pedido) internal pedidos;
     mapping(address => uint256[]) internal pedidosDeCliente;
     mapping(address => uint256[]) internal pedidosDeAutorizado;
+    mapping(address => bytes32[]) internal idsAutorizadosPorCliente;
+    mapping(address => mapping(bytes32 => bool))
+        internal idAutorizadoIndexadoPorCliente;
+    mapping(address => address[]) internal empresasRegistradas;
+    mapping(address => bool) internal empresaIndexada;
+    mapping(address => address[]) internal repartidoresPorEmpresa;
+    mapping(address => mapping(address => bool))
+        internal repartidorIndexadoPorEmpresa;
+    mapping(address => mapping(uint256 => bool))
+        internal pedidoIndexadoPorAutorizado;
 
     constructor(
         address initialOwner
@@ -270,6 +282,12 @@ contract AutoriZameToken is
             telefono: telefono,
             existe: true
         });
+
+        if (!idAutorizadoIndexadoPorCliente[msg.sender][idBytes]) {
+            idsAutorizadosPorCliente[msg.sender].push(idBytes);
+            idAutorizadoIndexadoPorCliente[msg.sender][idBytes] = true;
+        }
+
         emit PersonaAutorizadaRegistrada(msg.sender, identificacion);
     }
 
@@ -279,8 +297,26 @@ contract AutoriZameToken is
         soloCliente
         returns (PersonaAutorizada[] memory)
     {
-        // Implementación básica
-        return new PersonaAutorizada[](0);
+        bytes32[] storage ids = idsAutorizadosPorCliente[msg.sender];
+
+        uint256 total = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (autorizados[msg.sender][ids[i]].existe) {
+                total++;
+            }
+        }
+
+        PersonaAutorizada[] memory lista = new PersonaAutorizada[](total);
+        uint256 idx = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            PersonaAutorizada storage a = autorizados[msg.sender][ids[i]];
+            if (a.existe) {
+                lista[idx] = a;
+                idx++;
+            }
+        }
+
+        return lista;
     }
 
     function actualizarAutorizado(
@@ -314,7 +350,7 @@ contract AutoriZameToken is
             nombreAEmpresa[nombreBytes] != address(0) &&
             empresasPorDireccion[nombreAEmpresa[nombreBytes]].existe
         ) {
-            revert CorreoDuplicado();
+            revert EmpresaDuplicada();
         }
 
         empresasPorDireccion[msg.sender] = EmpresaRepartidora({
@@ -325,14 +361,38 @@ contract AutoriZameToken is
         });
 
         nombreAEmpresa[nombreBytes] = msg.sender;
+
+        if (!empresaIndexada[msg.sender]) {
+            empresasRegistradas.push(msg.sender);
+            empresaIndexada[msg.sender] = true;
+        }
     }
 
     function listarEmpresas()
         public
-        pure
+        view
         returns (EmpresaRepartidora[] memory)
     {
-        return new EmpresaRepartidora[](0);
+        uint256 total = 0;
+        for (uint256 i = 0; i < empresasRegistradas.length; i++) {
+            if (empresasPorDireccion[empresasRegistradas[i]].existe) {
+                total++;
+            }
+        }
+
+        EmpresaRepartidora[] memory lista = new EmpresaRepartidora[](total);
+        uint256 idx = 0;
+        for (uint256 i = 0; i < empresasRegistradas.length; i++) {
+            EmpresaRepartidora storage e = empresasPorDireccion[
+                empresasRegistradas[i]
+            ];
+            if (e.existe) {
+                lista[idx] = e;
+                idx++;
+            }
+        }
+
+        return lista;
     }
 
     function actualizarEmpresa(
@@ -355,7 +415,7 @@ contract AutoriZameToken is
         string memory telefono
     ) public soloEmpresa {
         if (bytes(nombre).length == 0) revert FaltaDato("nombre");
-        if (repartidores[repartidor].existe) revert CorreoDuplicado(); // Evita duplicados
+        if (repartidores[repartidor].existe) revert RepartidorDuplicado(); // Evita duplicados
 
         repartidores[repartidor] = Repartidor({
             nombre: nombre,
@@ -365,10 +425,40 @@ contract AutoriZameToken is
             empresa: msg.sender, // La empresa que lo registra (msg.sender)
             existe: true
         });
+
+        if (!repartidorIndexadoPorEmpresa[msg.sender][repartidor]) {
+            repartidoresPorEmpresa[msg.sender].push(repartidor);
+            repartidorIndexadoPorEmpresa[msg.sender][repartidor] = true;
+        }
     }
 
-    function listarRepartidores() public pure returns (Repartidor[] memory) {
-        return new Repartidor[](0);
+    function listarRepartidores()
+        public
+        view
+        soloEmpresa
+        returns (Repartidor[] memory)
+    {
+        address[] storage listaEmpresa = repartidoresPorEmpresa[msg.sender];
+
+        uint256 total = 0;
+        for (uint256 i = 0; i < listaEmpresa.length; i++) {
+            Repartidor storage r = repartidores[listaEmpresa[i]];
+            if (r.existe && r.empresa == msg.sender) {
+                total++;
+            }
+        }
+
+        Repartidor[] memory lista = new Repartidor[](total);
+        uint256 idx = 0;
+        for (uint256 i = 0; i < listaEmpresa.length; i++) {
+            Repartidor storage r = repartidores[listaEmpresa[i]];
+            if (r.existe && r.empresa == msg.sender) {
+                lista[idx] = r;
+                idx++;
+            }
+        }
+
+        return lista;
     }
 
     function actualizarRepartidor(
@@ -441,13 +531,35 @@ contract AutoriZameToken is
     function verPedidosAutorizado(
         address autorizado
     ) public view returns (uint256[] memory) {
-        return pedidosDeAutorizado[autorizado];
+        uint256[] storage ids = pedidosDeAutorizado[autorizado];
+
+        uint256 total = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            uint256 tokenId = ids[i];
+            if (_ownerOf(tokenId) != address(0) && ownerOf(tokenId) == autorizado) {
+                total++;
+            }
+        }
+
+        uint256[] memory lista = new uint256[](total);
+        uint256 idx = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            uint256 tokenId = ids[i];
+            if (_ownerOf(tokenId) != address(0) && ownerOf(tokenId) == autorizado) {
+                lista[idx] = tokenId;
+                idx++;
+            }
+        }
+
+        return lista;
     }
 
     function actualizarEstado(
         uint256 tokenId,
         EstadoPedido nuevoEstado
     ) public soloRepartidor estadoValido(tokenId, nuevoEstado) {
+        if (pedidos[tokenId].repartidor != msg.sender)
+            revert PedidoNoPerteneceARepartidor();
         pedidos[tokenId].estado = nuevoEstado;
         emit EstadoPedidoActualizado(
             tokenId,
@@ -494,6 +606,10 @@ contract AutoriZameToken is
         }
 
         safeTransferFrom(msg.sender, to, tokenId);
+        if (!pedidoIndexadoPorAutorizado[to][tokenId]) {
+            pedidosDeAutorizado[to].push(tokenId);
+            pedidoIndexadoPorAutorizado[to][tokenId] = true;
+        }
         emit AutorizacionTransferida(tokenId, tokenId, msg.sender, to);
     }
 

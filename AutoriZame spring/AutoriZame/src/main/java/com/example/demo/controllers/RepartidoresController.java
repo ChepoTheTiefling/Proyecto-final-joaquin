@@ -160,6 +160,12 @@ public class RepartidoresController {
         if (r == null)
             return ResponseEntity.badRequest().body("No se encuentra el repartidor");
 
+        if (!empresa.getAddress().equals(r.getAddress_empresa()))
+            return ResponseEntity.badRequest().body("El repartidor no pertenece a la empresa autenticada");
+
+        if (r.getEstado() != Repartidores.Estado.Activo)
+            return ResponseEntity.badRequest().body("El repartidor no está activo");
+
         Pedidos p = privateService.getPedidoPorId(idPedido);
         if (p == null)
             return ResponseEntity.badRequest().body("No se encuentra el pedido");

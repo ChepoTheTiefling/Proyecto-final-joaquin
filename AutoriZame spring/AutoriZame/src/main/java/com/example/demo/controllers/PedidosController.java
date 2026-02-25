@@ -64,7 +64,12 @@ public class PedidosController {
         if (address == null)
             return ResponseEntity.status(401).build();
 
-        return ResponseEntity.ok(pedidosService.getByUsuario(address));
+        var lista = pedidosService.getByUsuario(address);
+
+        if (lista.isEmpty())
+            return ResponseEntity.ok("No hay pedidos registrados");
+
+        return ResponseEntity.ok(lista);
     }
 
     // ---------------------------------------------------------

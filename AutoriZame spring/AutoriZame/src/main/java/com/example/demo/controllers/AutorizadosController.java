@@ -96,6 +96,16 @@ public class AutorizadosController {
 
                 a.setCorreo(mod);
             }
+            case "address", "direccion" -> {
+                if (!mod.equalsIgnoreCase(a.getAddress()) &&
+                        autorizadosService.existsAddressByCliente(address, mod))
+                    return ResponseEntity.status(409).body("Dirección ya en uso");
+
+                a.setAddress(mod);
+            }
+            case "identificacion" -> {
+                return ResponseEntity.status(400).body("La identificación no se puede modificar");
+            }
             default -> {
                 return ResponseEntity.status(400).body("Tipo de dato incorrecto");
             }

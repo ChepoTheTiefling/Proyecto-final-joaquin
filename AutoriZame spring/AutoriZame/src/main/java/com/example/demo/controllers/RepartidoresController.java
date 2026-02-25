@@ -60,7 +60,12 @@ public class RepartidoresController {
         if (empresa == null)
             return ResponseEntity.status(401).build();
 
-        return ResponseEntity.ok(repartidoresService.getByEmpresa(empresa.getAddress()));
+        var lista = repartidoresService.getByEmpresa(empresa.getAddress());
+
+        if (lista.isEmpty())
+            return ResponseEntity.ok("No hay repartidores registrados");
+
+        return ResponseEntity.ok(lista);
     }
 
     // ---------------------------------------------------------

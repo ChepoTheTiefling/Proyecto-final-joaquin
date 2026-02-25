@@ -18,17 +18,14 @@ public class AutorizadosController {
 
     private final SesionesService sesionesService;
     private final AutorizadosService autorizadosService;
-    private final PrivateService privateService;
     private final PedidosService pedidosService;
 
     public AutorizadosController(SesionesService sesionesService,
                                  AutorizadosService autorizadosService,
-                                 PrivateService privateService,
                                  PedidosService pedidosService) {
 
         this.sesionesService = sesionesService;
         this.autorizadosService = autorizadosService;
-        this.privateService = privateService;
         this.pedidosService = pedidosService;
     }
 
@@ -40,27 +37,36 @@ public class AutorizadosController {
         if (addressCliente == null)
             return ResponseEntity.status(401).body("Token invalido");
 
-        if (autorizadosService.existsIdentificacionByCliente(addressCliente, a.getIdentificacion()))
-            return ResponseEntity.status(409).body("Identificacion ya registrada para este cliente");
+        if (autorizadosService.existsCorreoByCliente(address, a.getCorreo()))
+            return ResponseEntity.status(409).body("Ya existe una persona autorizada con ese correo");
+
+        if (autorizadosService.existsIdentificacionByCliente(address, a.getIdentificacion()))
+            return ResponseEntity.status(409).body("Ya existe una persona autorizada con esa identificación");
+
+        if (autorizadosService.existsAddressByCliente(address, a.getAddress()))
+            return ResponseEntity.status(409).body("Ya existe una persona autorizada con esa dirección");
 
         autorizadosService.crearAutorizado(addressCliente, a);
         return ResponseEntity.ok("Autorizado creado con exito");
     }
 
-    @GetMapping("/Consulta_Autorizado")
-    public ResponseEntity<List<Autorizados>> consultar(@RequestHeader("Authorization") String token) {
+	// ---------------------------------------------------------
+	// CONSULTAR AUTORIZADOS
+	// ---------------------------------------------------------
+	@GetMapping("/Consulta_Autorizado")
+	public ResponseEntity<?> consultar(@RequestHeader("Authorization") String token) {
 
-        String addressCliente = sesionesService.getAddressPorToken(token);
-        if (addressCliente == null)
-            return ResponseEntity.status(401).build();
+		String address = sesionesService.getAddressPorToken(token);
+		if (address == null)
+			return ResponseEntity.status(401).build();
 
-        List<Autorizados> lista = autorizadosService.getByCliente(addressCliente);
+		List<Autorizados> lista = autorizadosService.getByCliente(address);
 
-        if (lista.isEmpty())
-            return ResponseEntity.status(404).build();
+		if (lista.isEmpty())
+			return ResponseEntity.ok("No hay personas autorizadas registradas");
 
-        return ResponseEntity.ok(lista);
-    }
+		return ResponseEntity.ok(lista);
+	}
 
     @PatchMapping("/Actualizar_Autorizado")
     public ResponseEntity<String> actualizar(@RequestHeader("Authorization") String token,
@@ -72,24 +78,30 @@ public class AutorizadosController {
         if (addressCliente == null)
             return ResponseEntity.status(401).body("Token invalido");
 
-        Autorizados a = privateService.getAutorizado(addressCliente, identificacion);
+        Autorizados a = autorizadosService.getByClienteAndCorreo(address, correo);
+
         if (a == null)
             return ResponseEntity.status(404).body("Autorizado no encontrado");
 
         switch (dato.toLowerCase()) {
             case "nombre" -> a.setNombre(mod);
-            case "telefono" -> {
-                if (!esTelefonoValido(mod))
-                    return ResponseEntity.badRequest().body("Telefono invalido");
-                a.setTlf(mod);
+            case "telefono" -> a.setTlf(mod);
+            case "correo" -> {
+                if (!mod.equalsIgnoreCase(a.getCorreo()) &&
+                        autorizadosService.existsCorreoByCliente(address, mod))
+                    return ResponseEntity.status(409).body("Correo ya en uso");
+
+                a.setCorreo(mod);
             }
-            case "address" -> {
-                if (!esAddressEthereumValida(mod))
-                    return ResponseEntity.badRequest().body("Address Ethereum invalida");
+            case "address", "direccion" -> {
+                if (!mod.equalsIgnoreCase(a.getAddress()) &&
+                        autorizadosService.existsAddressByCliente(address, mod))
+                    return ResponseEntity.status(409).body("Dirección ya en uso");
+
                 a.setAddress(mod);
             }
             case "identificacion" -> {
-                return ResponseEntity.badRequest().body("La identificacion no se puede modificar");
+                return ResponseEntity.status(400).body("La identificación no se puede modificar");
             }
             default -> {
                 return ResponseEntity.badRequest().body("Tipo de dato incorrecto");
@@ -116,11 +128,13 @@ public class AutorizadosController {
         if (!sesionesService.esTokenTemporalValido(token, confirmar))
             return ResponseEntity.badRequest().body("Token temporal incorrecto");
 
-        Autorizados autor = privateService.getAutorizado(addressCliente, identificacion);
+        // eliminar referencias en pedidos
+        Autorizados autor = autorizadosService.getByClienteAndCorreo(address, correo);
+
         if (autor != null) {
             for (Pedidos p : pedidosService.getAll()) {
-                if (identificacion.equalsIgnoreCase(p.getIdAutorizado())) {
-                    p.setIdAutorizado(null);
+                if (p.getAddressesAutorizados() != null) {
+                    p.getAddressesAutorizados().remove(autor.getAddress());
                 }
             }
         }

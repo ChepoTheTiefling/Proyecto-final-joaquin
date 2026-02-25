@@ -1,11 +1,6 @@
 package com.example.demo.objects;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import com.example.demo.objects.Pedidos;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.validation.constraints.*;
 
@@ -35,7 +30,6 @@ public class Usuarios {
 	private String address;
 	
 	//Datos autogenerados
-	@JsonIgnore
 	private String creationDate;
 	
 	private List<String> notificaciones;
@@ -79,10 +73,7 @@ public class Usuarios {
 	}
 	
 	public void setCreationDate(String string) {
-		LocalDate fecha = LocalDate.now();
-		DateTimeFormatter formato = DateTimeFormatter.ofPattern("ddMMyyyy");
-		
-		this.creationDate = fecha.format(formato);
+		this.creationDate = string;
 	}
 
 	public List<String> getNotificaciones() {

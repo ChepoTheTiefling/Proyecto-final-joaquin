@@ -60,7 +60,12 @@ public class RepartidoresController {
         if (empresa == null)
             return ResponseEntity.status(401).build();
 
-        return ResponseEntity.ok(repartidoresService.getByEmpresa(empresa.getAddress()));
+        var lista = repartidoresService.getByEmpresa(empresa.getAddress());
+
+        if (lista.isEmpty())
+            return ResponseEntity.ok("No hay repartidores registrados");
+
+        return ResponseEntity.ok(lista);
     }
 
     // ---------------------------------------------------------
@@ -158,6 +163,12 @@ public class RepartidoresController {
             return ResponseEntity.badRequest().body("El repartidor no pertenece a la empresa");
         if (r.getEstado() != Repartidores.Estado.Activo)
             return ResponseEntity.badRequest().body("El repartidor no esta activo");
+
+        if (!empresa.getAddress().equals(r.getAddress_empresa()))
+            return ResponseEntity.badRequest().body("El repartidor no pertenece a la empresa autenticada");
+
+        if (r.getEstado() != Repartidores.Estado.Activo)
+            return ResponseEntity.badRequest().body("El repartidor no está activo");
 
         Pedidos p = privateService.getPedidoPorId(idPedido);
         if (p == null)

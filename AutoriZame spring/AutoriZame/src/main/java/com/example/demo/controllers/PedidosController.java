@@ -67,7 +67,12 @@ public class PedidosController {
         if (address == null)
             return ResponseEntity.status(401).build();
 
-        return ResponseEntity.ok(pedidosService.getByUsuario(address));
+        var lista = pedidosService.getByUsuario(address);
+
+        if (lista.isEmpty())
+            return ResponseEntity.ok("No hay pedidos registrados");
+
+        return ResponseEntity.ok(lista);
     }
 
     @PostMapping("/Transferir_Autorizacion_NFT")
@@ -143,6 +148,9 @@ public class PedidosController {
                         (p.getEstado() == Pedidos.Estado.Procesando && estado == Pedidos.Estado.Entregado);
         if (!transicionValida)
             return ResponseEntity.badRequest().body("Transicion de estado no valida");
+
+        if (p.getMailRepartidor() == null || !correo.equalsIgnoreCase(p.getMailRepartidor()))
+            return ResponseEntity.status(403).body("Solo el repartidor asignado puede cambiar el estado del pedido");
 
         p.setEstado(estado);
 

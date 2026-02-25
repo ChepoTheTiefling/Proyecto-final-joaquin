@@ -21,6 +21,24 @@ public class AutorizadosService {
                 identificacion.equalsIgnoreCase(a.getIdentificacion()));
     }
 
+    public boolean existsCorreoByCliente(String addressCliente, String correo) {
+        return autorizados.stream().anyMatch(a ->
+                addressCliente.equals(a.getAddres_cliente()) &&
+                        correo.equalsIgnoreCase(a.getCorreo()));
+    }
+
+    public boolean existsIdentificacionByCliente(String addressCliente, String identificacion) {
+        return autorizados.stream().anyMatch(a ->
+                addressCliente.equals(a.getAddres_cliente()) &&
+                        identificacion.equalsIgnoreCase(a.getIdentificacion()));
+    }
+
+    public boolean existsAddressByCliente(String addressCliente, String addressAutorizado) {
+        return autorizados.stream().anyMatch(a ->
+                addressCliente.equals(a.getAddres_cliente()) &&
+                        addressAutorizado.equalsIgnoreCase(a.getAddress()));
+    }
+
     public void crearAutorizado(String addressCliente, Autorizados a) {
         a.setAddressCliente(addressCliente);
         autorizados.add(a);
@@ -44,9 +62,18 @@ public class AutorizadosService {
                 .orElse(null);
     }
 
-    public boolean eliminarAutorizado(String addressCliente, String identificacion) {
+    public Autorizados getByClienteAndCorreo(String addressCliente, String correo) {
+        return autorizados.stream()
+                .filter(a ->
+                        addressCliente.equals(a.getAddres_cliente()) &&
+                                correo.equalsIgnoreCase(a.getCorreo()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public boolean eliminarAutorizado(String addressCliente, String correo) {
         return autorizados.removeIf(a ->
-                addressCliente.equals(a.getAddressCliente()) &&
-                identificacion.equalsIgnoreCase(a.getIdentificacion()));
+                addressCliente.equals(a.getAddres_cliente()) &&
+                correo.equalsIgnoreCase(a.getCorreo()));
     }
 }

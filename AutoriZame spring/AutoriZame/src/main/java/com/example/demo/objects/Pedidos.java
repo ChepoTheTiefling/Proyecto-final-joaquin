@@ -1,109 +1,98 @@
 package com.example.demo.objects;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import java.util.List;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 
 public class Pedidos {
-    private int id;
+	private int id;
+	
+	@Pattern(
+	        regexp = "^0x[a-fA-F0-9]{40}$",
+	        message = "La dirección debe ser una dirección válida de Ethereum"
+	    )
+	private String addressUsuario;
+	
+	@NotBlank
+	@Pattern(
+	        regexp = "^0x[a-fA-F0-9]{40}$",
+	        message = "La dirección Destinatario debe ser una dirección válida de Ethereum"
+	    )
+	private String destinatario;
 
-    @NotBlank
-    @Pattern(
-            regexp = "^0x[a-fA-F0-9]{40}$",
-            message = "La direccion debe ser una direccion valida de Ethereum"
-    )
-    private String addressUsuario;
+	@NotBlank
+	private String descripcion;
+	
+	@Email
+	private String mailRepartidor;
+	
+	@Valid
+	public List<@Pattern(
+	        regexp = "^0x[a-fA-F0-9]{40}$",
+	        message = "La dirección de los autorizados debe ser una dirección válida de Ethereum"
+	    ) String> addressesAutorizados;		
+	public enum Estado{
+		Pendiente,
+		Procesando,
+		Entregado
+	}
+	private Estado estado = Estado.Pendiente;
+	
+	
+	public int getId() {
+		return id;
+	}
+	
+	public void setId(int id) {
+		this.id = id;
+	}
+	
+	public String getAddressUsuario() {
+		return addressUsuario;
+	}
+	
+	public void setAddressUsuario(String addressUsuario) {
+		this.addressUsuario = addressUsuario;
+	}
+	
+	public List<String> getAddressesAutorizados() {
+		return addressesAutorizados;
+	}
+	
+	public void setAddressesAutorizados(List<String> addressesAutorizados) {
+		this.addressesAutorizados = addressesAutorizados;
+	}
+	
+	public String getMailRepartidor() {
+		return mailRepartidor;
+	}
+	
+	public void setMailRepartidor(String mailRepartidor) {
+		this.mailRepartidor = mailRepartidor;
+	}
+	
+	public Estado getEstado() {
+		return estado;
+	}
+	
+	public void setEstado(Estado estado) {
+		this.estado = estado;
+	}
+	
+	public String getDescripcion() {
+		return descripcion;
+	}
+	
+	public void setDescripcion(String descripcion) {
+		this.descripcion = descripcion;
+	}
+	
+	public String getDestinatario() {
+		return destinatario;
+	}
 
-    @NotBlank
-    private String descripcion;
-
-    @NotBlank
-    private String idAutorizado;
-
-    @NotBlank
-    private String direccionEntrega;
-
-    // Se asigna cuando la empresa vincula un repartidor al pedido.
-    private String mailRepartidor;
-    private Long tokenIdNft;
-    private String codigoAutorizacion;
-
-    public enum Estado {
-        Pendiente,
-        Procesando,
-        Entregado
-    }
-
-    private Estado estado = Estado.Pendiente;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getAddressUsuario() {
-        return addressUsuario;
-    }
-
-    public void setAddressUsuario(String addressUsuario) {
-        this.addressUsuario = addressUsuario;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public String getIdAutorizado() {
-        return idAutorizado;
-    }
-
-    public void setIdAutorizado(String idAutorizado) {
-        this.idAutorizado = idAutorizado;
-    }
-
-    public String getDireccionEntrega() {
-        return direccionEntrega;
-    }
-
-    public void setDireccionEntrega(String direccionEntrega) {
-        this.direccionEntrega = direccionEntrega;
-    }
-
-    public String getMailRepartidor() {
-        return mailRepartidor;
-    }
-
-    public void setMailRepartidor(String mailRepartidor) {
-        this.mailRepartidor = mailRepartidor;
-    }
-
-    public Long getTokenIdNft() {
-        return tokenIdNft;
-    }
-
-    public void setTokenIdNft(Long tokenIdNft) {
-        this.tokenIdNft = tokenIdNft;
-    }
-
-    public String getCodigoAutorizacion() {
-        return codigoAutorizacion;
-    }
-
-    public void setCodigoAutorizacion(String codigoAutorizacion) {
-        this.codigoAutorizacion = codigoAutorizacion;
-    }
-
-    public Estado getEstado() {
-        return estado;
-    }
-
-    public void setEstado(Estado estado) {
-        this.estado = estado;
-    }
+	public void setDestinatario(String destinatario) {
+		this.destinatario = destinatario;
+	}
 }

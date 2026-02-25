@@ -90,7 +90,7 @@ public class EmpresasController {
 
                 e.setNombre(mod);
             }
-            case "email", "correo" -> e.setMail(mod);
+            case "correo", "email" -> e.setMail(mod);
             case "telefono", "tlf" -> e.setTlf(mod);
             default -> {
                 return ResponseEntity.status(400).body("Dato incorrecto");

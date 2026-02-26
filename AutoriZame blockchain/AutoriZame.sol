@@ -117,13 +117,15 @@ contract AutoriZameToken is
     mapping(address => bytes32[]) internal idsAutorizadosPorCliente;
     mapping(address => mapping(bytes32 => bool))
         internal idAutorizadoIndexadoPorCliente;
-    mapping(address => address[]) internal empresasRegistradas;
     mapping(address => bool) internal empresaIndexada;
     mapping(address => address[]) internal repartidoresPorEmpresa;
     mapping(address => mapping(address => bool))
         internal repartidorIndexadoPorEmpresa;
     mapping(address => mapping(uint256 => bool))
         internal pedidoIndexadoPorAutorizado;
+
+    
+    address[] internal empresasRegistradas;
 
     constructor(
         address initialOwner
@@ -517,7 +519,6 @@ contract AutoriZameToken is
             revert PedidoNoPerteneceAEmpresa();
 
         pedido.repartidor = repartidor;
-        pedido.estado = EstadoPedido.Enviando;
         pedido.empresa = msg.sender;
         emit PedidoAsignado(tokenId, msg.sender, repartidor);
     }
@@ -577,7 +578,7 @@ contract AutoriZameToken is
         if (pedido.estado != EstadoPedido.Enviando) revert EstadoInvalido();
 
         pedido.estado = EstadoPedido.Entregado;
-        _transfer(pedido.cliente, pedido.empresa, tokenId);
+        _transfer(ownerOf(tokenId), pedido.empresa, tokenId);
         emit PedidoEntregado(tokenId);
     }
 

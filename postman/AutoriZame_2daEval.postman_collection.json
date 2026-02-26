@@ -1,0 +1,455 @@
+{
+  "info": {
+    "_postman_id": "d10ad9dd-4cd5-4e4e-8703-4ceb2046f999",
+    "name": "AutoriZame 2da Evaluacion",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "spring_base_url", "value": "http://localhost:8080/v1/autorizame" },
+    { "key": "ipfs_base_url", "value": "http://localhost:3001" },
+    { "key": "sc_base_url", "value": "http://localhost:3002" },
+
+    { "key": "admin_address", "value": "0x4960Be8B41B3210Fca5c2e592372c47ea8dc4F86" },
+    { "key": "admin_password", "value": "admin" },
+
+    { "key": "client_address", "value": "0x1111111111111111111111111111111111111111" },
+    { "key": "client_password", "value": "Password!A" },
+    { "key": "client_mail", "value": "cliente1@test.com" },
+
+    { "key": "autorizado_address", "value": "0x2222222222222222222222222222222222222222" },
+    { "key": "autorizado_identificacion", "value": "AUT-001" },
+
+    { "key": "empresa_address", "value": "0x3333333333333333333333333333333333333333" },
+    { "key": "empresa_password", "value": "Password!A" },
+
+    { "key": "repartidor_correo", "value": "rep1@test.com" },
+    { "key": "repartidor_password", "value": "Password!A" },
+
+    { "key": "client_private_key", "value": "" },
+    { "key": "autorizado_private_key", "value": "" },
+
+    { "key": "pedido_id", "value": "1" },
+    { "key": "cid", "value": "" },
+    { "key": "chain_token_id", "value": "" },
+    { "key": "spring_token_id", "value": "" },
+
+    { "key": "user_token", "value": "" },
+    { "key": "admin_token", "value": "" },
+    { "key": "empresa_token", "value": "" },
+    { "key": "repartidor_token", "value": "" },
+    { "key": "confirm_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Wrapper IPFS",
+      "item": [
+        {
+          "name": "Health IPFS",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{ipfs_base_url}}/health"
+          }
+        },
+        {
+          "name": "Subir Metadata",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.cid) {",
+                  "  pm.collectionVariables.set('cid', json.cid);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idPedido\": {{pedido_id}},\n  \"addressCliente\": \"{{client_address}}\",\n  \"addressAutorizado\": \"{{autorizado_address}}\",\n  \"timestamp\": \"26/02/2026 18:30:00\"\n}"
+            },
+            "url": "{{ipfs_base_url}}/subirMetadata"
+          }
+        },
+        {
+          "name": "Recuperar Metadata",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{ipfs_base_url}}/recuperarMetadata/{{cid}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Wrapper Smart Contract",
+      "item": [
+        {
+          "name": "Health SC",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{sc_base_url}}/health"
+          }
+        },
+        {
+          "name": "Mintar Autorizacion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.chainTokenId) {",
+                  "  pm.collectionVariables.set('chain_token_id', String(json.chainTokenId));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": {{pedido_id}},\n  \"toAddress\": \"{{client_address}}\",\n  \"tokenUri\": \"ipfs://{{cid}}\"\n}"
+            },
+            "url": "{{sc_base_url}}/mintarAutorizacion"
+          }
+        },
+        {
+          "name": "Owner de Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{sc_base_url}}/owner/{{chain_token_id}}"
+          }
+        },
+        {
+          "name": "Transferir Autorizacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenId\": {{chain_token_id}},\n  \"toAddress\": \"{{autorizado_address}}\",\n  \"senderPrivateKey\": \"{{client_private_key}}\"\n}"
+            },
+            "url": "{{sc_base_url}}/transferirAutorizacion"
+          }
+        },
+        {
+          "name": "Quemar Autorizacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenId\": {{chain_token_id}},\n  \"senderPrivateKey\": \"{{autorizado_private_key}}\"\n}"
+            },
+            "url": "{{sc_base_url}}/quemarAutorizacion"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Spring - Usuario",
+      "item": [
+        {
+          "name": "Crear Usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente Uno\",\n  \"mail\": \"{{client_mail}}\",\n  \"password\": \"{{client_password}}\",\n  \"address\": \"{{client_address}}\"\n}"
+            },
+            "url": "{{spring_base_url}}/Crear_Usuario"
+          }
+        },
+        {
+          "name": "Login Usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const text = pm.response.text();",
+                  "const m = text.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);",
+                  "if (m) {",
+                  "  pm.collectionVariables.set('user_token', m[0]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{spring_base_url}}/Login?address={{client_address}}&password={{client_password}}"
+          }
+        },
+        {
+          "name": "Mostrar Datos Cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "{{user_token}}" }
+            ],
+            "url": "{{spring_base_url}}/Mostrar_Datos_Cliente"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Spring - Autorizados y Pedidos",
+      "item": [
+        {
+          "name": "Crear Autorizado",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "{{user_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Autorizado Uno\",\n  \"correo\": \"aut1@test.com\",\n  \"tlf\": \"612345670\",\n  \"identificacion\": \"{{autorizado_identificacion}}\",\n  \"address\": \"{{autorizado_address}}\"\n}"
+            },
+            "url": "{{spring_base_url}}/Crear_Autorizado"
+          }
+        },
+        {
+          "name": "Registrar Pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "{{user_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Pedido de prueba\",\n  \"destinatario\": \"{{autorizado_address}}\",\n  \"idAutorizado\": \"{{autorizado_identificacion}}\",\n  \"direccionEntrega\": \"Calle Falsa 123\"\n}"
+            },
+            "url": "{{spring_base_url}}/Registrar_Pedido"
+          }
+        },
+        {
+          "name": "Consultar Pedidos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let json;",
+                  "try { json = pm.response.json(); } catch(e) {}",
+                  "if (Array.isArray(json) && json.length > 0 && json[0].tokenIdNft) {",
+                  "  pm.collectionVariables.set('spring_token_id', String(json[0].tokenIdNft));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "{{user_token}}" }
+            ],
+            "url": "{{spring_base_url}}/Consultar_Pedidos"
+          }
+        },
+        {
+          "name": "Consultar NFT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{spring_base_url}}/Consultar_Autorizacion_NFT?tokenId={{spring_token_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Spring - Admin, Empresa y Repartidor",
+      "item": [
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const text = pm.response.text();",
+                  "const m = text.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);",
+                  "if (m) {",
+                  "  pm.collectionVariables.set('admin_token', m[0]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{spring_base_url}}/Login_Admin?address={{admin_address}}&password={{admin_password}}"
+          }
+        },
+        {
+          "name": "Crear Empresa Repartidora",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "{{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"FastShip\",\n  \"mail\": \"fastship@test.com\",\n  \"address\": \"{{empresa_address}}\",\n  \"tlf\": \"611222333\",\n  \"password\": \"{{empresa_password}}\"\n}"
+            },
+            "url": "{{spring_base_url}}/Crear_Empresa_Repartidora"
+          }
+        },
+        {
+          "name": "Login Empresa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const text = pm.response.text();",
+                  "const m = text.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);",
+                  "if (m) {",
+                  "  pm.collectionVariables.set('empresa_token', m[0]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{spring_base_url}}/Login_Empresa?address={{empresa_address}}&password={{empresa_password}}"
+          }
+        },
+        {
+          "name": "Registrar Repartidor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "{{empresa_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Rep Uno\",\n  \"correo\": \"{{repartidor_correo}}\",\n  \"tlf\": \"612345678\",\n  \"address_empresa\": \"{{empresa_address}}\",\n  \"password\": \"{{repartidor_password}}\"\n}"
+            },
+            "url": "{{spring_base_url}}/Registrar_Repartidor"
+          }
+        },
+        {
+          "name": "Login Repartidor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const text = pm.response.text();",
+                  "const m = text.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);",
+                  "if (m) {",
+                  "  pm.collectionVariables.set('repartidor_token', m[0]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{spring_base_url}}/Login_Repartidor?correo={{repartidor_correo}}&password={{repartidor_password}}"
+          }
+        },
+        {
+          "name": "Asignar Repartidor a Pedido",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "{{empresa_token}}" }
+            ],
+            "url": "{{spring_base_url}}/Asignar_Repartidor?idPedido={{pedido_id}}&correo={{repartidor_correo}}"
+          }
+        },
+        {
+          "name": "Cambiar Estado Pedido a Procesando",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "{{repartidor_token}}" }
+            ],
+            "url": "{{spring_base_url}}/Cambiar_Estado_Pedido?id={{pedido_id}}&estado=Procesando"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Spring - Confirmaciones (X-Confirm)",
+      "item": [
+        {
+          "name": "Solicitar Token Confirmacion Eliminar Pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const text = pm.response.text();",
+                  "const m = text.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);",
+                  "if (m) {",
+                  "  pm.collectionVariables.set('confirm_token', m[0]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "{{user_token}}" }
+            ],
+            "url": "{{spring_base_url}}/Eliminar_Pedido?idPedido={{pedido_id}}"
+          }
+        },
+        {
+          "name": "Confirmar Eliminar Pedido",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "{{user_token}}" },
+              { "key": "X-Confirm", "value": "{{confirm_token}}" }
+            ],
+            "url": "{{spring_base_url}}/Eliminar_Pedido?idPedido={{pedido_id}}"
+          }
+        }
+      ]
+    }
+  ]
+}

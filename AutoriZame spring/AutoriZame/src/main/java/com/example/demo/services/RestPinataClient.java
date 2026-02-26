@@ -1,11 +1,11 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.PinataUploadResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.http.MediaType;
 
 import java.util.Map;
 
@@ -14,10 +14,8 @@ import java.util.Map;
 public class RestPinataClient implements PinataClient {
 
     private final RestClient restClient;
-    private final ObjectMapper objectMapper;
 
-    public RestPinataClient(@Value("${wrappers.pinata.base-url}") String baseUrl, ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public RestPinataClient(@Value("${wrappers.pinata.base-url}") String baseUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
@@ -26,11 +24,11 @@ public class RestPinataClient implements PinataClient {
     @Override
     public PinataUploadResult uploadJson(String fileName, String jsonContent) {
         try {
-            Object payload = objectMapper.readValue(jsonContent, Object.class);
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restClient.post()
                     .uri("/subirMetadata")
-                    .body(payload)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(jsonContent)
                     .retrieve()
                     .body(Map.class);
 

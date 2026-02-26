@@ -4,7 +4,6 @@ import com.example.demo.objects.Autorizados;
 import com.example.demo.objects.Pedidos;
 import com.example.demo.services.AutorizadosService;
 import com.example.demo.services.PedidosService;
-import com.example.demo.services.PrivateService;
 import com.example.demo.services.SesionesService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -37,13 +36,13 @@ public class AutorizadosController {
         if (addressCliente == null)
             return ResponseEntity.status(401).body("Token invalido");
 
-        if (autorizadosService.existsCorreoByCliente(address, a.getCorreo()))
+        if (autorizadosService.existsCorreoByCliente(addressCliente, a.getCorreo()))
             return ResponseEntity.status(409).body("Ya existe una persona autorizada con ese correo");
 
-        if (autorizadosService.existsIdentificacionByCliente(address, a.getIdentificacion()))
+        if (autorizadosService.existsIdentificacionByCliente(addressCliente, a.getIdentificacion()))
             return ResponseEntity.status(409).body("Ya existe una persona autorizada con esa identificación");
 
-        if (autorizadosService.existsAddressByCliente(address, a.getAddress()))
+        if (autorizadosService.existsAddressByCliente(addressCliente, a.getAddress()))
             return ResponseEntity.status(409).body("Ya existe una persona autorizada con esa dirección");
 
         autorizadosService.crearAutorizado(addressCliente, a);
@@ -78,7 +77,7 @@ public class AutorizadosController {
         if (addressCliente == null)
             return ResponseEntity.status(401).body("Token invalido");
 
-        Autorizados a = autorizadosService.getByClienteAndCorreo(address, correo);
+        Autorizados a = autorizadosService.getByClienteAndIdentificacion(addressCliente, identificacion);
 
         if (a == null)
             return ResponseEntity.status(404).body("Autorizado no encontrado");
@@ -88,14 +87,14 @@ public class AutorizadosController {
             case "telefono" -> a.setTlf(mod);
             case "correo" -> {
                 if (!mod.equalsIgnoreCase(a.getCorreo()) &&
-                        autorizadosService.existsCorreoByCliente(address, mod))
+                        autorizadosService.existsCorreoByCliente(addressCliente, mod))
                     return ResponseEntity.status(409).body("Correo ya en uso");
 
                 a.setCorreo(mod);
             }
             case "address", "direccion" -> {
                 if (!mod.equalsIgnoreCase(a.getAddress()) &&
-                        autorizadosService.existsAddressByCliente(address, mod))
+                        autorizadosService.existsAddressByCliente(addressCliente, mod))
                     return ResponseEntity.status(409).body("Dirección ya en uso");
 
                 a.setAddress(mod);
@@ -129,7 +128,7 @@ public class AutorizadosController {
             return ResponseEntity.badRequest().body("Token temporal incorrecto");
 
         // eliminar referencias en pedidos
-        Autorizados autor = autorizadosService.getByClienteAndCorreo(address, correo);
+        Autorizados autor = autorizadosService.getByClienteAndIdentificacion(addressCliente, identificacion);
 
         if (autor != null) {
             for (Pedidos p : pedidosService.getAll()) {
@@ -146,13 +145,5 @@ public class AutorizadosController {
             return ResponseEntity.ok("Autorizado eliminado");
 
         return ResponseEntity.status(404).body("Autorizado no encontrado");
-    }
-
-    private boolean esTelefonoValido(String telefono) {
-        return telefono != null && telefono.matches("^[0-9]{9}$");
-    }
-
-    private boolean esAddressEthereumValida(String address) {
-        return address != null && address.matches("^0x[a-fA-F0-9]{40}$");
     }
 }

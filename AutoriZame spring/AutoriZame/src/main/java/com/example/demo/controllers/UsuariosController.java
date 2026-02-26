@@ -87,7 +87,7 @@ public class UsuariosController {
 
 		// primera fase: generar token temporal
 		if (confirmar == null || confirmar.equals("")) {
-			String temp = sesionesService.crearTokenTemporal();
+			String temp = sesionesService.crearTokenTemporal(token);
 			return ResponseEntity.ok("Para confirmar la eliminación usa este token: X-Confirm: " + temp);
 		}
 
@@ -104,7 +104,7 @@ public class UsuariosController {
 		// ---------------------------------------------------------
 		// BORRAR AUTORIZADOS ASOCIADOS
 		// ---------------------------------------------------------
-		autorizadosService.getAll().removeIf(a -> address.equals(a.getAddressCliente()));
+		autorizadosService.getAll().removeIf(a -> address.equals(a.getAddres_cliente()));
 
 		// ---------------------------------------------------------
 		// BORRAR USUARIO

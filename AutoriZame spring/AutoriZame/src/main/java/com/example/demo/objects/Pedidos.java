@@ -23,9 +23,17 @@ public class Pedidos {
 
 	@NotBlank
 	private String descripcion;
+
+	private String idAutorizado;
+
+	private String direccionEntrega;
 	
 	@Email
 	private String mailRepartidor;
+
+	private Long tokenIdNft;
+
+	private String codigoAutorizacion;
 	
 	@Valid
 	public List<@Pattern(
@@ -94,5 +102,37 @@ public class Pedidos {
 
 	public void setDestinatario(String destinatario) {
 		this.destinatario = destinatario;
+	}
+
+	public String getIdAutorizado() {
+		return idAutorizado;
+	}
+
+	public void setIdAutorizado(String idAutorizado) {
+		this.idAutorizado = idAutorizado;
+	}
+
+	public String getDireccionEntrega() {
+		return direccionEntrega;
+	}
+
+	public void setDireccionEntrega(String direccionEntrega) {
+		this.direccionEntrega = direccionEntrega;
+	}
+
+	public Long getTokenIdNft() {
+		return tokenIdNft;
+	}
+
+	public void setTokenIdNft(Long tokenIdNft) {
+		this.tokenIdNft = tokenIdNft;
+	}
+
+	public String getCodigoAutorizacion() {
+		return codigoAutorizacion;
+	}
+
+	public void setCodigoAutorizacion(String codigoAutorizacion) {
+		this.codigoAutorizacion = codigoAutorizacion;
 	}
 }

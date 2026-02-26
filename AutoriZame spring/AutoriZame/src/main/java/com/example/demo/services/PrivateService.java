@@ -92,6 +92,11 @@ public class PrivateService {
             if (r.getNotificaciones() == null)
                 r.setNotificaciones(new java.util.ArrayList<>());
             r.getNotificaciones().add(notif);
+            repartidoresService.actualizarRepartidor(r);
         }
+    }
+
+    public void actualizarUsuario(Usuarios usuario) {
+        usuariosService.actualizarUsuario(usuario);
     }
 }

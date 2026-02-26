@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.PinataUploadResult;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -8,6 +9,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 @Service
+@ConditionalOnProperty(name = "wrappers.enabled", havingValue = "false", matchIfMissing = true)
 public class MockPinataClient implements PinataClient {
 
     @Override

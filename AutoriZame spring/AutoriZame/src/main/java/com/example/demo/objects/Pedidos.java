@@ -2,16 +2,22 @@ package com.example.demo.objects;
 
 import java.util.List;
 
+import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
+@Entity
+@Table(name = "pedidos")
 public class Pedidos {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 	
 	@Pattern(
 	        regexp = "^0x[a-fA-F0-9]{40}$",
 	        message = "La dirección debe ser una dirección válida de Ethereum"
 	    )
+	@Column(nullable = false)
 	private String addressUsuario;
 	
 	@NotBlank
@@ -19,13 +25,19 @@ public class Pedidos {
 	        regexp = "^0x[a-fA-F0-9]{40}$",
 	        message = "La dirección Destinatario debe ser una dirección válida de Ethereum"
 	    )
+	@Column(nullable = false)
 	private String destinatario;
 
 	@NotBlank
+	@Column(nullable = false)
 	private String descripcion;
 
+	@NotBlank
+	@Column(nullable = false)
 	private String idAutorizado;
 
+	@NotBlank
+	@Column(nullable = false)
 	private String direccionEntrega;
 	
 	@Email
@@ -35,16 +47,20 @@ public class Pedidos {
 
 	private String codigoAutorizacion;
 	
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "pedidos_autorizados", joinColumns = @JoinColumn(name = "pedido_id"))
+	@Column(name = "address_autorizado")
 	@Valid
-	public List<@Pattern(
+	private List<@Pattern(
 	        regexp = "^0x[a-fA-F0-9]{40}$",
 	        message = "La dirección de los autorizados debe ser una dirección válida de Ethereum"
 	    ) String> addressesAutorizados;		
 	public enum Estado{
 		Pendiente,
-		Procesando,
-		Entregado
+			Procesando,
+			Entregado
 	}
+	@Enumerated(EnumType.STRING)
 	private Estado estado = Estado.Pendiente;
 	
 	

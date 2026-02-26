@@ -2,28 +2,42 @@ package com.example.demo.objects;
 
 import java.util.List;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
+@Entity
+@Table(name = "repartidores", uniqueConstraints = {
+		@UniqueConstraint(columnNames = "correo")
+})
 public class Repartidores {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 	
 	@NotBlank(message = "El nombre es obligatorio")
+	@Column(nullable = false)
 	private String nombre;
 	
 	@NotBlank(message = "El correo es obligatorio")
 	@Email(message = "Introduce un correo válido")
+	@Column(nullable = false)
 	private String correo;
 	
+	@NotBlank(message = "El teléfono es obligatorio")
 	@Pattern(
 			regexp = "^[0-9]{9}$",
 			message = "El número debe tener 9 dígitos"
 			)
+	@Column(nullable = false)
 	private String tlf;
 	
     @Pattern(
         regexp = "^0x[a-fA-F0-9]{40}$",
         message = "La dirección debe ser una dirección válida de Ethereum"
     )
-	private String address_empresa;
+	@Column(name = "address_empresa", nullable = false)
+	private String addressEmpresa;
 	
 	@NotBlank(message = "La contraseña no puede estar vacía")
     @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
@@ -31,8 +45,12 @@ public class Repartidores {
 			regexp = "^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]).*$",
 			message = "La contraseña debe tener al menos una mayúscula y un símbolo"
 			)
+	@Column(nullable = false)
 	private String password;
 	
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "repartidores_notificaciones", joinColumns = @JoinColumn(name = "repartidor_id"))
+	@Column(name = "notificacion")
 	private List<String> notificaciones;
 	
 	public enum Estado{
@@ -40,7 +58,16 @@ public class Repartidores {
 		Inactivo
 	}
 	
+	@Enumerated(EnumType.STRING)
 	private Estado estado = Estado.Activo;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
 	
 	public String getNombre() {
 		return nombre;
@@ -67,11 +94,19 @@ public class Repartidores {
 	}
 
 	public String getAddress_empresa() {
-		return address_empresa;
+		return addressEmpresa;
 	}
 
 	public void setAddress_empresa(String address_empresa) {
-		this.address_empresa = address_empresa;
+		this.addressEmpresa = address_empresa;
+	}
+
+	public String getAddressEmpresa() {
+		return addressEmpresa;
+	}
+
+	public void setAddressEmpresa(String addressEmpresa) {
+		this.addressEmpresa = addressEmpresa;
 	}
 
 	public String getPassword() {

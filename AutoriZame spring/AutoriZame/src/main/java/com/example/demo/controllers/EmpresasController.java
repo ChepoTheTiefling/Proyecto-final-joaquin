@@ -97,6 +97,8 @@ public class EmpresasController {
             }
         }
 
+        empresasService.actualizarEmpresa(e);
+
         return ResponseEntity.ok("Empresa actualizada");
     }
 
@@ -125,7 +127,7 @@ public class EmpresasController {
             return ResponseEntity.badRequest().body("Token temporal incorrecto");
 
         // borrar repartidores asociados
-        repartidoresService.getAll().removeIf(r -> address.equals(r.getAddress_empresa()));
+        repartidoresService.eliminarPorEmpresa(address);
 
         boolean eliminado = empresasService.eliminarEmpresa(address);
 

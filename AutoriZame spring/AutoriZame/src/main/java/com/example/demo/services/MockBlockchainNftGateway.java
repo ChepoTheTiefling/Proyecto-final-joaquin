@@ -1,11 +1,13 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.BlockchainTxResult;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 
 @Service
+@ConditionalOnProperty(name = "wrappers.enabled", havingValue = "false", matchIfMissing = true)
 public class MockBlockchainNftGateway implements BlockchainNftGateway {
 
     private final SecureRandom random = new SecureRandom();

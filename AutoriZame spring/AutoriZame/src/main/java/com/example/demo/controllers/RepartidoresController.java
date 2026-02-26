@@ -100,6 +100,8 @@ public class RepartidoresController {
             }
         }
 
+        repartidoresService.actualizarRepartidor(rep);
+
         return ResponseEntity.ok("Repartidor actualizado");
     }
 
@@ -129,6 +131,7 @@ public class RepartidoresController {
         for (Pedidos p : pedidosService.getAll()) {
             if (correo.equals(p.getMailRepartidor())) {
                 p.setMailRepartidor(null);
+                pedidosService.actualizarPedido(p);
             }
         }
 
@@ -179,6 +182,7 @@ public class RepartidoresController {
             return ResponseEntity.badRequest().body("El pedido ya tiene un repartidor asignado");
 
         p.setMailRepartidor(correo);
+        pedidosService.actualizarPedido(p);
         privateService.notificacionesRepartidor("Pedido con id " + idPedido + " asignado", correo);
 
         return ResponseEntity.ok("Repartidor asignado con éxito");

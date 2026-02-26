@@ -107,6 +107,8 @@ public class AutorizadosController {
             }
         }
 
+        autorizadosService.actualizarAutorizado(a);
+
         return ResponseEntity.ok("Autorizado actualizado");
     }
 
@@ -134,6 +136,7 @@ public class AutorizadosController {
             for (Pedidos p : pedidosService.getAll()) {
                 if (p.getAddressesAutorizados() != null) {
                     p.getAddressesAutorizados().remove(autor.getAddress());
+                    pedidosService.actualizarPedido(p);
                 }
             }
         }

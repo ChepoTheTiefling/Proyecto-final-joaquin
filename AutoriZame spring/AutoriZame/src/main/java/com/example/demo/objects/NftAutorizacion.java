@@ -1,5 +1,9 @@
 package com.example.demo.objects;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "nft_autorizaciones")
 public class NftAutorizacion {
 
     public enum Estado {
@@ -7,7 +11,10 @@ public class NftAutorizacion {
         QUEMADO
     }
 
-    private long tokenId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long tokenId;
+
     private int pedidoId;
     private String ownerAddress;
     private String metadataUri;
@@ -15,6 +22,8 @@ public class NftAutorizacion {
     private String metadataJson;
     private String codigoNumerico;
     private String idAutorizadoHash;
+
+    @Enumerated(EnumType.STRING)
     private Estado estado = Estado.ACTIVO;
 
     private Long chainTokenId;
@@ -22,11 +31,11 @@ public class NftAutorizacion {
     private String transferTxHash;
     private String burnTxHash;
 
-    public long getTokenId() {
+    public Long getTokenId() {
         return tokenId;
     }
 
-    public void setTokenId(long tokenId) {
+    public void setTokenId(Long tokenId) {
         this.tokenId = tokenId;
     }
 

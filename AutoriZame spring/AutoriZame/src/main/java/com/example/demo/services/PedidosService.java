@@ -1,45 +1,48 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.Pedidos;
+import com.example.demo.repositories.PedidosRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class PedidosService {
 
-    private final List<Pedidos> pedidos = new ArrayList<>();
-    private int ultimoID = 0;
+    private final PedidosRepository pedidosRepository;
+
+    public PedidosService(PedidosRepository pedidosRepository) {
+        this.pedidosRepository = pedidosRepository;
+    }
 
     public Pedidos getById(int id) {
-        return pedidos.stream()
-                .filter(p -> p.getId() == id)
-                .findFirst()
-                .orElse(null);
+        return pedidosRepository.findById(id).orElse(null);
     }
 
     public void registrarPedido(String addressUsuario, Pedidos p) {
-        p.setId(++ultimoID);
         p.setAddressUsuario(addressUsuario);
-        pedidos.add(p);
+        pedidosRepository.save(p);
+    }
+
+    public void actualizarPedido(Pedidos pedido) {
+        pedidosRepository.save(pedido);
     }
 
     public List<Pedidos> getByUsuario(String addressUsuario) {
-        List<Pedidos> res = new ArrayList<>();
-        for (Pedidos p : pedidos) {
-            if (addressUsuario.equals(p.getAddressUsuario())) {
-                res.add(p);
-            }
-        }
-        return res;
+        return pedidosRepository.findByAddressUsuario(addressUsuario);
     }
 
     public boolean eliminarPedido(int id) {
-        return pedidos.removeIf(p -> p.getId() == id);
+        if (!pedidosRepository.existsById(id)) return false;
+        pedidosRepository.deleteById(id);
+        return true;
+    }
+
+    public void eliminarPorUsuario(String addressUsuario) {
+        pedidosRepository.deleteByAddressUsuario(addressUsuario);
     }
 
     public List<Pedidos> getAll() {
-        return pedidos;
+        return pedidosRepository.findAll();
     }
 }

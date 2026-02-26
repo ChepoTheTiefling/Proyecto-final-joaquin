@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.objects.BlockchainTxResult;
 import com.example.demo.objects.NftAutorizacion;
 import com.example.demo.objects.PinataUploadResult;
+import com.example.demo.repositories.NftAutorizacionRepository;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -10,42 +11,42 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class NftAutorizacionService {
 
     private final PinataClient pinataClient;
     private final BlockchainNftGateway blockchainNftGateway;
-    private final Map<Long, NftAutorizacion> tokens = new HashMap<>();
-    private long nextTokenId = 1L;
+    private final NftAutorizacionRepository nftAutorizacionRepository;
     private final SecureRandom random = new SecureRandom();
+    private static final DateTimeFormatter METADATA_TS = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
-    public NftAutorizacionService(PinataClient pinataClient, BlockchainNftGateway blockchainNftGateway) {
+    public NftAutorizacionService(PinataClient pinataClient,
+                                  BlockchainNftGateway blockchainNftGateway,
+                                  NftAutorizacionRepository nftAutorizacionRepository) {
         this.pinataClient = pinataClient;
         this.blockchainNftGateway = blockchainNftGateway;
+        this.nftAutorizacionRepository = nftAutorizacionRepository;
     }
 
     public synchronized NftAutorizacion mintParaPedido(int pedidoId,
                                                        String ownerAddress,
-                                                       String idAutorizado,
+                                                       String addressAutorizado,
                                                        String direccionEntrega,
                                                        String descripcion) {
         validarAddress(ownerAddress);
-        if (idAutorizado == null || idAutorizado.isBlank()) {
-            throw new IllegalArgumentException("El ID de autorizado es obligatorio");
-        }
+        validarAddress(addressAutorizado);
 
-        long tokenId = nextTokenId++;
         NftAutorizacion nft = new NftAutorizacion();
-        nft.setTokenId(tokenId);
         nft.setPedidoId(pedidoId);
         nft.setOwnerAddress(ownerAddress);
         nft.setCodigoNumerico(generarCodigo8Digitos());
-        nft.setIdAutorizadoHash(hashConSalt(idAutorizado, "autorizame-salt"));
+        nft.setIdAutorizadoHash(hashConSalt(addressAutorizado, "autorizame-salt"));
+        nft = nftAutorizacionRepository.save(nft);
 
-        String metadataJson = crearMetadataJson(nft, direccionEntrega, descripcion);
+        String metadataJson = crearMetadataJson(nft, ownerAddress, addressAutorizado, direccionEntrega, descripcion);
         PinataUploadResult upload = pinataClient.uploadJson("pedido-" + pedidoId + ".json", metadataJson);
         nft.setCidIpfs(upload.getCid());
         nft.setMetadataUri(upload.getTokenUri());
@@ -55,8 +56,7 @@ public class NftAutorizacionService {
         nft.setChainTokenId(mintTx.getChainTokenId());
         nft.setMintTxHash(mintTx.getTxHash());
 
-        tokens.put(tokenId, nft);
-        return nft;
+        return nftAutorizacionRepository.save(nft);
     }
 
     public synchronized NftAutorizacion transferirAutorizacion(long tokenId, String fromAddress, String toAddress) {
@@ -73,7 +73,7 @@ public class NftAutorizacionService {
         String txHash = blockchainNftGateway.transferAuthorizationToken(nft.getChainTokenId(), fromAddress, toAddress);
         nft.setOwnerAddress(toAddress);
         nft.setTransferTxHash(txHash);
-        return nft;
+        return nftAutorizacionRepository.save(nft);
     }
 
     public synchronized NftAutorizacion quemarAutorizacion(long tokenId, String ownerAddress) {
@@ -89,15 +89,12 @@ public class NftAutorizacionService {
         String txHash = blockchainNftGateway.burnAuthorizationToken(nft.getChainTokenId(), ownerAddress);
         nft.setEstado(NftAutorizacion.Estado.QUEMADO);
         nft.setBurnTxHash(txHash);
-        return nft;
+        return nftAutorizacionRepository.save(nft);
     }
 
     public synchronized NftAutorizacion getToken(long tokenId) {
-        NftAutorizacion nft = tokens.get(tokenId);
-        if (nft == null) {
-            throw new IllegalArgumentException("Token no encontrado");
-        }
-        return nft;
+        return nftAutorizacionRepository.findById(tokenId)
+                .orElseThrow(() -> new IllegalArgumentException("Token no encontrado"));
     }
 
     private String generarCodigo8Digitos() {
@@ -119,11 +116,19 @@ public class NftAutorizacionService {
         }
     }
 
-    private String crearMetadataJson(NftAutorizacion nft, String direccionEntrega, String descripcion) {
+    private String crearMetadataJson(NftAutorizacion nft,
+                                     String addressCliente,
+                                     String addressAutorizado,
+                                     String direccionEntrega,
+                                     String descripcion) {
         return "{"
                 + "\"name\":\"" + escapeJson("AutoriZame Pedido #" + nft.getPedidoId()) + "\"," 
                 + "\"description\":\"" + escapeJson("Autorizacion NFT para recogida de pedido") + "\"," 
                 + "\"createdAt\":\"" + escapeJson(Instant.now().toString()) + "\"," 
+                + "\"idPedido\":" + nft.getPedidoId() + ","
+                + "\"addressCliente\":\"" + escapeJson(addressCliente) + "\","
+                + "\"addressAutorizado\":\"" + escapeJson(addressAutorizado) + "\","
+                + "\"timestamp\":\"" + escapeJson(LocalDateTime.now().format(METADATA_TS)) + "\","
                 + "\"attributes\":{"
                 + "\"pedidoId\":" + nft.getPedidoId() + ","
                 + "\"tokenId\":" + nft.getTokenId() + ","

@@ -99,12 +99,12 @@ public class UsuariosController {
 		// ---------------------------------------------------------
 		// BORRAR PEDIDOS ASOCIADOS
 		// ---------------------------------------------------------
-		pedidosService.getAll().removeIf(p -> address.equals(p.getAddressUsuario()));
+		pedidosService.eliminarPorUsuario(address);
 
 		// ---------------------------------------------------------
 		// BORRAR AUTORIZADOS ASOCIADOS
 		// ---------------------------------------------------------
-		autorizadosService.getAll().removeIf(a -> address.equals(a.getAddres_cliente()));
+		autorizadosService.eliminarPorCliente(address);
 
 		// ---------------------------------------------------------
 		// BORRAR USUARIO
@@ -158,6 +158,8 @@ public class UsuariosController {
 		default:
 			return ResponseEntity.status(400).body("ERROR: Tipo de dato incorrecto");
 		}
+
+		usuariosService.actualizarUsuario(u);
 
 		return ResponseEntity.ok("Dato modificado con éxito");
 	}

@@ -1,47 +1,55 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.Repartidores;
+import com.example.demo.repositories.RepartidoresRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class RepartidoresService {
 
-    private final List<Repartidores> repartidores = new ArrayList<>();
+    private final RepartidoresRepository repartidoresRepository;
+
+    public RepartidoresService(RepartidoresRepository repartidoresRepository) {
+        this.repartidoresRepository = repartidoresRepository;
+    }
 
     public List<Repartidores> getAll() {
-        return repartidores;
+        return repartidoresRepository.findAll();
     }
 
     public boolean existsCorreo(String correo) {
-        return repartidores.stream().anyMatch(r -> correo.equalsIgnoreCase(r.getCorreo()));
+        return repartidoresRepository.existsByCorreoIgnoreCase(correo);
     }
 
     public void registrarRepartidor(String addressEmpresa, Repartidores r) {
-        r.setAddress_empresa(addressEmpresa);
-        repartidores.add(r);
+        r.setAddressEmpresa(addressEmpresa);
+        repartidoresRepository.save(r);
+    }
+
+    public void actualizarRepartidor(Repartidores repartidor) {
+        repartidoresRepository.save(repartidor);
     }
 
     public List<Repartidores> getByEmpresa(String addressEmpresa) {
-        List<Repartidores> res = new ArrayList<>();
-        for (Repartidores r : repartidores) {
-            if (addressEmpresa.equals(r.getAddress_empresa())) {
-                res.add(r);
-            }
-        }
-        return res;
+        return repartidoresRepository.findByAddressEmpresa(addressEmpresa);
     }
 
     public Repartidores getByCorreo(String correo) {
         if (correo == null) return null;
-        return repartidores.stream().filter(r -> correo.equals(r.getCorreo())).findFirst().orElse(null);
+        return repartidoresRepository.findByCorreo(correo).orElse(null);
     }
 
     public boolean eliminarRepartidor(String correo, String addressEmpresa) {
-        return repartidores.removeIf(r ->
-                correo.equals(r.getCorreo()) &&
-                addressEmpresa.equals(r.getAddress_empresa()));
+        Repartidores repartidor = getByCorreo(correo);
+        if (repartidor == null) return false;
+        if (!addressEmpresa.equals(repartidor.getAddressEmpresa())) return false;
+        repartidoresRepository.delete(repartidor);
+        return true;
+    }
+
+    public void eliminarPorEmpresa(String addressEmpresa) {
+        repartidoresRepository.deleteByAddressEmpresa(addressEmpresa);
     }
 }

@@ -43,7 +43,8 @@ public class PedidosController {
 
         p.setAddressUsuario(address);
 
-        if (privateService.getAutorizado(address, p.getIdAutorizado()) == null) {
+        var autorizado = privateService.getAutorizado(address, p.getIdAutorizado());
+        if (autorizado == null) {
             return ResponseEntity.badRequest().body("El ID de autorizado no pertenece al cliente autenticado");
         }
 
@@ -51,11 +52,12 @@ public class PedidosController {
         NftAutorizacion nft = nftAutorizacionService.mintParaPedido(
                 p.getId(),
                 address,
-                p.getIdAutorizado(),
+                autorizado.getAddress(),
                 p.getDireccionEntrega(),
                 p.getDescripcion());
         p.setTokenIdNft(nft.getTokenId());
         p.setCodigoAutorizacion(nft.getCodigoNumerico());
+        pedidosService.actualizarPedido(p);
         return ResponseEntity.ok("Pedido registrado con exito");
     }
 
@@ -153,6 +155,7 @@ public class PedidosController {
             return ResponseEntity.status(403).body("Solo el repartidor asignado puede cambiar el estado del pedido");
 
         p.setEstado(estado);
+        pedidosService.actualizarPedido(p);
 
         Usuarios u = privateService.getUsuarioPorAddress(p.getAddressUsuario());
         if (u != null) {
@@ -160,6 +163,7 @@ public class PedidosController {
                 u.setNotificaciones(new ArrayList<>());
 
             u.getNotificaciones().add("El pedido " + id + " ha cambiado de estado a " + estado);
+            privateService.actualizarUsuario(u);
         }
 
         return ResponseEntity.ok("Estado actualizado");

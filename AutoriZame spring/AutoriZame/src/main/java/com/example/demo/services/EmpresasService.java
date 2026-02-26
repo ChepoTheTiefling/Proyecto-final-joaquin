@@ -1,41 +1,49 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.Empresas;
+import com.example.demo.repositories.EmpresasRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class EmpresasService {
 
-    private final List<Empresas> empresas = new ArrayList<>();
+    private final EmpresasRepository empresasRepository;
+
+    public EmpresasService(EmpresasRepository empresasRepository) {
+        this.empresasRepository = empresasRepository;
+    }
 
     public List<Empresas> getAll() {
-        return empresas;
+        return empresasRepository.findAll();
     }
 
     public boolean existsAddress(String address) {
-        return empresas.stream().anyMatch(e -> address.equalsIgnoreCase(e.getAddress()));
+        return empresasRepository.existsByAddressIgnoreCase(address);
     }
 
     public boolean existsNombre(String nombre) {
-        return empresas.stream().anyMatch(e -> nombre.equalsIgnoreCase(e.getNombre()));
+        return empresasRepository.existsByNombreIgnoreCase(nombre);
     }
 
     public void crearEmpresa(Empresas e) {
-        empresas.add(e);
+        empresasRepository.save(e);
+    }
+
+    public void actualizarEmpresa(Empresas empresa) {
+        empresasRepository.save(empresa);
     }
 
     public Empresas getByAddress(String address) {
         if (address == null) return null;
-        return empresas.stream()
-                .filter(e -> address.equals(e.getAddress()))
-                .findFirst()
-                .orElse(null);
+        return empresasRepository.findByAddress(address).orElse(null);
     }
 
     public boolean eliminarEmpresa(String address) {
-        return empresas.removeIf(e -> address.equalsIgnoreCase(e.getAddress()));
+        Empresas empresa = getByAddress(address);
+        if (empresa == null) return false;
+        empresasRepository.delete(empresa);
+        return true;
     }
 }

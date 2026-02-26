@@ -1,31 +1,36 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.Administradores;
+import com.example.demo.repositories.AdministradoresRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class AdminService {
 
-    private final List<Administradores> admins = new ArrayList<>();
+    private final AdministradoresRepository administradoresRepository;
+
+    public AdminService(AdministradoresRepository administradoresRepository) {
+        this.administradoresRepository = administradoresRepository;
+    }
 
     @PostConstruct
     private void init() {
-        Administradores admin = new Administradores();
-        admin.setAddress("0x4960Be8B41B3210Fca5c2e592372c47ea8dc4F86");
-        admin.setPassword("admin");
-        admins.add(admin);
+        if (!administradoresRepository.existsByAddressIgnoreCase("0x4960Be8B41B3210Fca5c2e592372c47ea8dc4F86")) {
+            Administradores admin = new Administradores();
+            admin.setAddress("0x4960Be8B41B3210Fca5c2e592372c47ea8dc4F86");
+            admin.setPassword("admin");
+            administradoresRepository.save(admin);
+        }
     }
 
     public boolean isAdmin(String address) {
-        return admins.stream()
-                .anyMatch(a -> a.getAddress().equalsIgnoreCase(address));
+        return administradoresRepository.existsByAddressIgnoreCase(address);
     }
 
     public List<Administradores> getAll() {
-        return admins;
+        return administradoresRepository.findAll();
     }
 }

@@ -1,0 +1,19 @@
+{
+  "name": "ms_wrapper_ipfs",
+  "version": "1.0.0",
+  "description": "Wrapper REST para Pinata/IPFS",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "pinata": "^2.5.5"
+  }
+}

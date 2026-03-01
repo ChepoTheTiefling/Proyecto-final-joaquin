@@ -39,9 +39,12 @@ async function subirMetadataHandler(req, res) {
       return res.status(400).json({ error: validationError });
     }
 
+    console.log(`[ms_wrapper_ipfs] POST /subirMetadata idPedido=${req.body?.idPedido}`);
     const result = await uploadMetadata(pinata, req.body);
+    console.log(`[ms_wrapper_ipfs] metadata subida cid=${result.cid}`);
     return res.status(201).json(result);
   } catch (error) {
+    console.error("[ms_wrapper_ipfs] error subirMetadata:", error.message);
     return res.status(502).json({
       error: "Error subiendo metadata a Pinata",
       details: error.message
@@ -60,12 +63,14 @@ async function recuperarMetadataHandler(req, res) {
       return res.status(400).json({ error: "CID obligatorio" });
     }
 
+    console.log(`[ms_wrapper_ipfs] GET /recuperarMetadata cid=${cid}`);
     const metadata = await recoverMetadata(pinata, cid);
     return res.json({
       cid,
       metadata
     });
   } catch (error) {
+    console.error("[ms_wrapper_ipfs] error recuperarMetadata:", error.message);
     return res.status(502).json({
       error: "Error recuperando metadata desde Pinata/IPFS",
       details: error.message

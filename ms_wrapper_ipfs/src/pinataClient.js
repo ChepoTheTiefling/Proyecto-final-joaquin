@@ -42,7 +42,7 @@ export async function uploadMetadata(pinata, payload) {
   if (!cid) {
     throw new Error("La respuesta de Pinata no contiene CID");
   }
-  const ipfsUrl = buildIpfsUrl(cid);
+  const ipfsUrl = await pinata.gateways.public.convert(cid);
 
   return {
     fileName,
@@ -56,10 +56,4 @@ export async function uploadMetadata(pinata, payload) {
 export async function recoverMetadata(pinata, cid) {
   const response = await pinata.gateways.public.get(cid);
   return response?.data ?? response;
-}
-
-function buildIpfsUrl(cid) {
-  const gateway = process.env.PINATA_GATEWAY || "";
-  const normalized = gateway.startsWith("http") ? gateway : `https://${gateway}`;
-  return `${normalized.replace(/\/+$/, "")}/ipfs/${cid}`;
 }

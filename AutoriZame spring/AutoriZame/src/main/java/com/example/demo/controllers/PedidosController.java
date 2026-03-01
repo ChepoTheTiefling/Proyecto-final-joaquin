@@ -1,6 +1,8 @@
 package com.example.demo.controllers;
 
 import com.example.demo.objects.Pedidos;
+import com.example.demo.objects.QuemarNftRequest;
+import com.example.demo.objects.TransferirNftRequest;
 import com.example.demo.objects.Usuarios;
 import com.example.demo.objects.NftAutorizacion;
 import com.example.demo.services.NftAutorizacionService;
@@ -79,15 +81,18 @@ public class PedidosController {
 
     @PostMapping("/Transferir_Autorizacion_NFT")
     public ResponseEntity<String> transferirNft(@RequestHeader("Authorization") String token,
-                                                @RequestParam long tokenId,
-                                                @RequestParam String toAddress) {
+                                                @Valid @RequestBody TransferirNftRequest request) {
         String fromAddress = sesionesService.getAddressPorToken(token);
         if (!esSesionConAddress(fromAddress)) {
             return ResponseEntity.status(401).body("Sesion no valida para operar NFT");
         }
 
         try {
-            nftAutorizacionService.transferirAutorizacion(tokenId, fromAddress, toAddress);
+            nftAutorizacionService.transferirAutorizacion(
+                    request.getTokenId(),
+                    fromAddress,
+                    request.getToAddress(),
+                    request.getSenderPrivateKey());
             return ResponseEntity.ok("NFT transferido");
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -98,14 +103,17 @@ public class PedidosController {
 
     @PostMapping("/Quemar_Autorizacion_NFT")
     public ResponseEntity<String> quemarNft(@RequestHeader("Authorization") String token,
-                                            @RequestParam long tokenId) {
+                                            @Valid @RequestBody QuemarNftRequest request) {
         String ownerAddress = sesionesService.getAddressPorToken(token);
         if (!esSesionConAddress(ownerAddress)) {
             return ResponseEntity.status(401).body("Sesion no valida para operar NFT");
         }
 
         try {
-            nftAutorizacionService.quemarAutorizacion(tokenId, ownerAddress);
+            nftAutorizacionService.quemarAutorizacion(
+                    request.getTokenId(),
+                    ownerAddress,
+                    request.getSenderPrivateKey());
             return ResponseEntity.ok("NFT quemado");
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());

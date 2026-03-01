@@ -1,40 +1,65 @@
-# Comprobación de lectura de archivos (Blockchain + Spring)
+﻿# Analisis de Componentes (Estado Real)
 
-## Archivos disponibles y revisados
-- `AutoriZame blockchain/AutoriZame.sol`
-- `AutoriZame spring/Especificación OPENAPI (api-docs.json).docx` (contenido OpenAPI embebido en el DOCX)
+## 1. Estructura principal del repositorio
+- `AutoriZame spring/AutoriZame`: backend Spring Boot (API principal).
+- `AutoriZame blockchain/AutoriZame.sol`: contrato Solidity.
+- `ms_wrapper_ipfs`: wrapper REST para Pinata/IPFS.
+- `ms_wrapper_sc`: wrapper REST para smart contract con ethers v6.
+- `postman/AutoriZame_2daEval.postman_collection.json`: pruebas E2E.
 
-> Nota importante: en el repositorio actual **no hay código fuente Java/Kotlin de Spring** (por ejemplo `src/main/java/...`) ni fichero de build (`pom.xml` o `build.gradle`).
+## 2. Estado backend Spring
+- Hay codigo fuente completo (`controllers`, `services`, `repositories`, `objects`).
+- Dependencias clave en `pom.xml`:
+  - `spring-boot-starter-webmvc`
+  - `spring-boot-starter-data-jpa`
+  - `spring-boot-starter-validation`
+  - `h2`
+- Persistencia activa con JPA y repositorios `JpaRepository`.
+- BBDD configurada en fichero H2 para persistencia entre reinicios:
+  - `jdbc:h2:file:./data/autorizame...`
 
-## Parte blockchain (contrato Solidity)
-- El contrato `AutoriZameToken` implementa un flujo de pedidos como NFT (ERC-721) con extensiones de enumeración, URI storage y burn. Usa `Ownable` y `ReentrancyGuard`.
-- Roles modelados: cliente, autorizado, empresa repartidora y repartidor.
-- Flujo principal del pedido:
-  1. Cliente crea pedido (`crearPedido`) y se mina NFT.
-  2. Empresa asigna repartidor (`asignarPedido`).
-  3. Repartidor actualiza estado (`actualizarEstado`) y entrega (`entregarPedido`).
-  4. Cliente puede cancelar mientras esté en `Procesando` (`cancelarPedido`).
-- Estados soportados por enum: `Procesando`, `Enviando`, `Entregado`, `Cancelado`.
-- Hay validaciones con errores personalizados y modificadores de acceso (`soloCliente`, `soloEmpresa`, `soloRepartidor`).
+## 3. Integracion Spring con wrappers
+- Integracion con `ms_wrapper_ipfs` por `RestClient`:
+  - subida de metadata y recuperacion de `cid/tokenUri`.
+- Integracion con `ms_wrapper_sc` por `RestClient`:
+  - mint, transfer, burn.
+- Ajuste aplicado:
+  - `senderPrivateKey` en transfer/burn se envia por body JSON en endpoints Spring, no por query.
 
-## Parte Spring (lo que sí se puede validar con lo subido)
-- El DOCX contiene una especificación OpenAPI 3.0.1 para servidor local `http://localhost:8080`.
-- Endpoints de negocio identificados bajo `/autorizame/...`, por ejemplo:
-  - `POST /autorizame/Crear_Usuario`
-  - `POST /autorizame/Crear_Empresa_Repartidora`
-  - `POST /autorizame/Crear_Autorizado`
-  - `POST /autorizame/Registrar_Pedido`
-  - `POST /autorizame/Registrar_Repartidor`
-  - `POST /autorizame/Cerrar_Sesion`
-- En varios endpoints se exige cabecera `Authorization`.
-- Esquemas principales en `components.schemas`: `Usuarios`, `Empresas`, `Autorizados`, `Pedidos`, `Repartidores`, con validaciones de formato (address EVM `0x...`, teléfono de 9 dígitos, reglas de password, etc.).
+## 4. Estado wrappers
+### `ms_wrapper_ipfs`
+- Endpoints:
+  - `GET /health`
+  - `POST /subirMetadata`
+  - `GET /recuperarMetadata/:cid`
+- Usa SDK oficial Pinata.
+- Ajuste aplicado:
+  - conversion de `cid` a URL con `pinata.gateways.public.convert(cid)`.
 
-## ¿Se pueden leer clases y dependencias de Spring?
-**No todavía, con los archivos actuales no.**
-- Para leer clases Spring necesito el código fuente (controladores, servicios, repositorios, entidades, configuración).
-- Para validar dependencias necesito `pom.xml` (Maven) o `build.gradle`/`gradle.properties` (Gradle).
+### `ms_wrapper_sc`
+- Endpoints:
+  - `GET /health`
+  - `POST /mintarAutorizacion`
+  - `POST /transferirAutorizacion`
+  - `POST /quemarAutorizacion`
+  - `GET /owner/:tokenId`
+- Usa `ethers` v6 (`JsonRpcProvider`, `Wallet`, `Contract`).
 
-## Conclusión
-- **Sí** se puede leer y entender la parte blockchain.
-- **Sí** se puede leer la API de Spring a nivel de contrato (OpenAPI).
-- **No** se pueden inspeccionar aún las clases internas ni dependencias reales de Spring porque esos archivos no están en el repositorio subido.
+## 5. Estado contrato Solidity
+- Contrato ERC-721 con URI storage, burn y enumerate.
+- Incluye:
+  - `transferirAutorizacion`
+  - `quemarAutorizacion`
+  - consulta de owner por `ownerOf` (estandar ERC-721).
+- Hay errores personalizados y eventos para trazabilidad.
+
+## 6. Estado funcional frente al enunciado
+- Integracion de backend Spring con ambos wrappers: implementada.
+- Capa de persistencia con Spring Data JPA: implementada.
+- Entidades persistidas: multiples (Usuarios, Autorizados, Pedidos, Empresas, Repartidores, NftAutorizacion, etc.).
+- Flujo de pedido con NFT: implementado (mint + almacenamiento de datos NFT en bbdd).
+
+## 7. Pendientes tecnicos razonables
+1. Ejecutar validacion E2E completa con wrappers reales y credenciales reales (`.env`) para dejar evidencia final.
+2. Anadir trazas minimas de negocio (pedidoId, tokenId, txHash) para reforzar la demostracion en video.
+3. Verificar que el owner real del token coincide con la private key usada en transfer/burn durante demo.

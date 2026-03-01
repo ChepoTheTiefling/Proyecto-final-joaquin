@@ -14,11 +14,8 @@ import java.util.Map;
 public class RestBlockchainNftGateway implements BlockchainNftGateway {
 
     private final RestClient restClient;
-    private final String senderPrivateKey;
 
-    public RestBlockchainNftGateway(@Value("${wrappers.sc.base-url}") String baseUrl,
-                                    @Value("${wrappers.sc.sender-private-key:}") String senderPrivateKey) {
-        this.senderPrivateKey = senderPrivateKey;
+    public RestBlockchainNftGateway(@Value("${wrappers.sc.base-url}") String baseUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
@@ -31,6 +28,7 @@ public class RestBlockchainNftGateway implements BlockchainNftGateway {
             payload.put("toAddress", ownerAddress);
             payload.put("tokenUri", tokenUri);
             payload.put("pedidoId", pedidoId);
+            System.out.println("[SPRING->SC] mint pedidoId=" + pedidoId + " to=" + ownerAddress);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restClient.post()
@@ -42,6 +40,7 @@ public class RestBlockchainNftGateway implements BlockchainNftGateway {
             BlockchainTxResult result = new BlockchainTxResult();
             result.setChainTokenId(parseLong(response == null ? null : response.get("chainTokenId")));
             result.setTxHash(response == null ? null : readAsString(response.get("txHash")));
+            System.out.println("[SPRING<-SC] mint chainTokenId=" + result.getChainTokenId() + " txHash=" + result.getTxHash());
             return result;
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo ejecutar mint en ms_wrapper_sc", ex);
@@ -49,9 +48,9 @@ public class RestBlockchainNftGateway implements BlockchainNftGateway {
     }
 
     @Override
-    public String transferAuthorizationToken(long chainTokenId, String fromAddress, String toAddress) {
+    public String transferAuthorizationToken(long chainTokenId, String fromAddress, String toAddress, String senderPrivateKey) {
         if (senderPrivateKey == null || senderPrivateKey.isBlank()) {
-            throw new IllegalStateException("Falta wrappers.sc.sender-private-key para transferir en wrapper SC");
+            throw new IllegalArgumentException("senderPrivateKey es obligatorio para transferir");
         }
 
         try {
@@ -59,6 +58,7 @@ public class RestBlockchainNftGateway implements BlockchainNftGateway {
             payload.put("tokenId", chainTokenId);
             payload.put("toAddress", toAddress);
             payload.put("senderPrivateKey", senderPrivateKey);
+            System.out.println("[SPRING->SC] transfer tokenId=" + chainTokenId + " to=" + toAddress);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restClient.post()
@@ -66,23 +66,25 @@ public class RestBlockchainNftGateway implements BlockchainNftGateway {
                     .body(payload)
                     .retrieve()
                     .body(Map.class);
-
-            return response == null ? null : readAsString(response.get("txHash"));
+            String txHash = response == null ? null : readAsString(response.get("txHash"));
+            System.out.println("[SPRING<-SC] transfer txHash=" + txHash);
+            return txHash;
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo ejecutar transferencia en ms_wrapper_sc", ex);
         }
     }
 
     @Override
-    public String burnAuthorizationToken(long chainTokenId, String ownerAddress) {
+    public String burnAuthorizationToken(long chainTokenId, String ownerAddress, String senderPrivateKey) {
         if (senderPrivateKey == null || senderPrivateKey.isBlank()) {
-            throw new IllegalStateException("Falta wrappers.sc.sender-private-key para quemar en wrapper SC");
+            throw new IllegalArgumentException("senderPrivateKey es obligatorio para quemar");
         }
 
         try {
             Map<String, Object> payload = new HashMap<>();
             payload.put("tokenId", chainTokenId);
             payload.put("senderPrivateKey", senderPrivateKey);
+            System.out.println("[SPRING->SC] burn tokenId=" + chainTokenId);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restClient.post()
@@ -90,8 +92,9 @@ public class RestBlockchainNftGateway implements BlockchainNftGateway {
                     .body(payload)
                     .retrieve()
                     .body(Map.class);
-
-            return response == null ? null : readAsString(response.get("txHash"));
+            String txHash = response == null ? null : readAsString(response.get("txHash"));
+            System.out.println("[SPRING<-SC] burn txHash=" + txHash);
+            return txHash;
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo ejecutar quema en ms_wrapper_sc", ex);
         }

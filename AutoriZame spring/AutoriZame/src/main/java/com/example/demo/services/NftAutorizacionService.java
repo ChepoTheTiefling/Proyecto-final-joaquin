@@ -38,6 +38,7 @@ public class NftAutorizacionService {
                                                        String descripcion) {
         validarAddress(ownerAddress);
         validarAddress(addressAutorizado);
+        System.out.println("[NFT] iniciar mint pedidoId=" + pedidoId + " owner=" + ownerAddress);
 
         NftAutorizacion nft = new NftAutorizacion();
         nft.setPedidoId(pedidoId);
@@ -45,23 +46,27 @@ public class NftAutorizacionService {
         nft.setCodigoNumerico(generarCodigo8Digitos());
         nft.setIdAutorizadoHash(hashConSalt(addressAutorizado, "autorizame-salt"));
         nft = nftAutorizacionRepository.save(nft);
+        System.out.println("[NFT] registro local tokenId=" + nft.getTokenId() + " codigo=" + nft.getCodigoNumerico());
 
         String metadataJson = crearMetadataJson(nft, ownerAddress, addressAutorizado, direccionEntrega, descripcion);
         PinataUploadResult upload = pinataClient.uploadJson("pedido-" + pedidoId + ".json", metadataJson);
         nft.setCidIpfs(upload.getCid());
         nft.setMetadataUri(upload.getTokenUri());
         nft.setMetadataJson(metadataJson);
+        System.out.println("[NFT] metadata subida cid=" + nft.getCidIpfs());
 
         BlockchainTxResult mintTx = blockchainNftGateway.mintAuthorizationToken(ownerAddress, nft.getMetadataUri(), pedidoId);
         nft.setChainTokenId(mintTx.getChainTokenId());
         nft.setMintTxHash(mintTx.getTxHash());
+        System.out.println("[NFT] mint completado chainTokenId=" + nft.getChainTokenId() + " tx=" + nft.getMintTxHash());
 
         return nftAutorizacionRepository.save(nft);
     }
 
-    public synchronized NftAutorizacion transferirAutorizacion(long tokenId, String fromAddress, String toAddress) {
+    public synchronized NftAutorizacion transferirAutorizacion(long tokenId, String fromAddress, String toAddress, String senderPrivateKey) {
         validarAddress(fromAddress);
         validarAddress(toAddress);
+        System.out.println("[NFT] transfer tokenId=" + tokenId + " from=" + fromAddress + " to=" + toAddress);
         NftAutorizacion nft = getToken(tokenId);
         if (nft.getEstado() == NftAutorizacion.Estado.QUEMADO) {
             throw new IllegalStateException("El token esta quemado");
@@ -70,14 +75,20 @@ public class NftAutorizacionService {
             throw new IllegalStateException("El token no pertenece al emisor");
         }
 
-        String txHash = blockchainNftGateway.transferAuthorizationToken(nft.getChainTokenId(), fromAddress, toAddress);
+        String txHash = blockchainNftGateway.transferAuthorizationToken(
+                nft.getChainTokenId(),
+                fromAddress,
+                toAddress,
+                senderPrivateKey);
         nft.setOwnerAddress(toAddress);
         nft.setTransferTxHash(txHash);
+        System.out.println("[NFT] transfer ok chainTokenId=" + nft.getChainTokenId() + " tx=" + txHash);
         return nftAutorizacionRepository.save(nft);
     }
 
-    public synchronized NftAutorizacion quemarAutorizacion(long tokenId, String ownerAddress) {
+    public synchronized NftAutorizacion quemarAutorizacion(long tokenId, String ownerAddress, String senderPrivateKey) {
         validarAddress(ownerAddress);
+        System.out.println("[NFT] burn tokenId=" + tokenId + " owner=" + ownerAddress);
         NftAutorizacion nft = getToken(tokenId);
         if (nft.getEstado() == NftAutorizacion.Estado.QUEMADO) {
             throw new IllegalStateException("El token ya esta quemado");
@@ -86,9 +97,13 @@ public class NftAutorizacionService {
             throw new IllegalStateException("Solo el owner puede quemar el token");
         }
 
-        String txHash = blockchainNftGateway.burnAuthorizationToken(nft.getChainTokenId(), ownerAddress);
+        String txHash = blockchainNftGateway.burnAuthorizationToken(
+                nft.getChainTokenId(),
+                ownerAddress,
+                senderPrivateKey);
         nft.setEstado(NftAutorizacion.Estado.QUEMADO);
         nft.setBurnTxHash(txHash);
+        System.out.println("[NFT] burn ok chainTokenId=" + nft.getChainTokenId() + " tx=" + txHash);
         return nftAutorizacionRepository.save(nft);
     }
 

@@ -5,39 +5,106 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "spring_base_url", "value": "http://localhost:8080/v1/autorizame" },
-    { "key": "ipfs_base_url", "value": "http://localhost:3001" },
-    { "key": "sc_base_url", "value": "http://localhost:3002" },
-
-    { "key": "admin_address", "value": "0x4960Be8B41B3210Fca5c2e592372c47ea8dc4F86" },
-    { "key": "admin_password", "value": "admin" },
-
-    { "key": "client_address", "value": "0x1111111111111111111111111111111111111111" },
-    { "key": "client_password", "value": "Password!A" },
-    { "key": "client_mail", "value": "cliente1@test.com" },
-
-    { "key": "autorizado_address", "value": "0x2222222222222222222222222222222222222222" },
-    { "key": "autorizado_identificacion", "value": "AUT-001" },
-
-    { "key": "empresa_address", "value": "0x3333333333333333333333333333333333333333" },
-    { "key": "empresa_password", "value": "Password!A" },
-
-    { "key": "repartidor_correo", "value": "rep1@test.com" },
-    { "key": "repartidor_password", "value": "Password!A" },
-
-    { "key": "client_private_key", "value": "" },
-    { "key": "autorizado_private_key", "value": "" },
-
-    { "key": "pedido_id", "value": "1" },
-    { "key": "cid", "value": "" },
-    { "key": "chain_token_id", "value": "" },
-    { "key": "spring_token_id", "value": "" },
-
-    { "key": "user_token", "value": "" },
-    { "key": "admin_token", "value": "" },
-    { "key": "empresa_token", "value": "" },
-    { "key": "repartidor_token", "value": "" },
-    { "key": "confirm_token", "value": "" }
+    {
+      "key": "spring_base_url",
+      "value": "http://localhost:8080/v1/autorizame"
+    },
+    {
+      "key": "ipfs_base_url",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "sc_base_url",
+      "value": "http://localhost:3002"
+    },
+    {
+      "key": "admin_address",
+      "value": "0x4960Be8B41B3210Fca5c2e592372c47ea8dc4F86"
+    },
+    {
+      "key": "admin_password",
+      "value": "admin"
+    },
+    {
+      "key": "client_address",
+      "value": "RELLENAR_CLIENT_ADDRESS"
+    },
+    {
+      "key": "client_password",
+      "value": "Password!A"
+    },
+    {
+      "key": "client_mail",
+      "value": "cliente1@test.com"
+    },
+    {
+      "key": "autorizado_address",
+      "value": "RELLENAR_AUTORIZADO_ADDRESS"
+    },
+    {
+      "key": "autorizado_identificacion",
+      "value": "AUT-001"
+    },
+    {
+      "key": "empresa_address",
+      "value": "RELLENAR_EMPRESA_ADDRESS"
+    },
+    {
+      "key": "empresa_password",
+      "value": "Password!A"
+    },
+    {
+      "key": "repartidor_correo",
+      "value": "rep1@test.com"
+    },
+    {
+      "key": "repartidor_password",
+      "value": "Password!A"
+    },
+    {
+      "key": "client_private_key",
+      "value": "RELLENAR_CLIENT_PRIVATE_KEY"
+    },
+    {
+      "key": "autorizado_private_key",
+      "value": "RELLENAR_AUTORIZADO_PRIVATE_KEY"
+    },
+    {
+      "key": "pedido_id",
+      "value": "1"
+    },
+    {
+      "key": "cid",
+      "value": ""
+    },
+    {
+      "key": "chain_token_id",
+      "value": ""
+    },
+    {
+      "key": "spring_token_id",
+      "value": ""
+    },
+    {
+      "key": "user_token",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "empresa_token",
+      "value": ""
+    },
+    {
+      "key": "repartidor_token",
+      "value": ""
+    },
+    {
+      "key": "confirm_token",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -70,7 +137,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -119,7 +189,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -141,13 +214,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
+            "url": "{{spring_base_url}}/Transferir_Autorizacion_NFT",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tokenId\": {{chain_token_id}},\n  \"toAddress\": \"{{autorizado_address}}\",\n  \"senderPrivateKey\": \"{{client_private_key}}\"\n}"
-            },
-            "url": "{{sc_base_url}}/transferirAutorizacion"
+              "raw": "{\n  \"tokenId\": {{spring_token_id}},\n  \"toAddress\": \"{{autorizado_address}}\",\n  \"senderPrivateKey\": \"{{client_private_key}}\"\n}"
+            }
           }
         },
         {
@@ -155,13 +235,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
+            "url": "{{spring_base_url}}/Quemar_Autorizacion_NFT",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tokenId\": {{chain_token_id}},\n  \"senderPrivateKey\": \"{{autorizado_private_key}}\"\n}"
-            },
-            "url": "{{sc_base_url}}/quemarAutorizacion"
+              "raw": "{\n  \"tokenId\": {{spring_token_id}},\n  \"senderPrivateKey\": \"{{autorizado_private_key}}\"\n}"
+            }
           }
         }
       ]
@@ -174,7 +261,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -211,7 +301,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "{{user_token}}" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              }
             ],
             "url": "{{spring_base_url}}/Mostrar_Datos_Cliente"
           }
@@ -226,8 +319,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "{{user_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -241,8 +340,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "{{user_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -271,7 +376,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "{{user_token}}" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              }
             ],
             "url": "{{spring_base_url}}/Consultar_Pedidos"
           }
@@ -317,8 +425,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "{{admin_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -355,8 +469,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "{{empresa_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "{{empresa_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -393,7 +513,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "{{empresa_token}}" }
+              {
+                "key": "Authorization",
+                "value": "{{empresa_token}}"
+              }
             ],
             "url": "{{spring_base_url}}/Asignar_Repartidor?idPedido={{pedido_id}}&correo={{repartidor_correo}}"
           }
@@ -403,7 +526,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "{{repartidor_token}}" }
+              {
+                "key": "Authorization",
+                "value": "{{repartidor_token}}"
+              }
             ],
             "url": "{{spring_base_url}}/Cambiar_Estado_Pedido?id={{pedido_id}}&estado=Procesando"
           }
@@ -433,7 +559,10 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "{{user_token}}" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              }
             ],
             "url": "{{spring_base_url}}/Eliminar_Pedido?idPedido={{pedido_id}}"
           }
@@ -443,8 +572,14 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "{{user_token}}" },
-              { "key": "X-Confirm", "value": "{{confirm_token}}" }
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}"
+              },
+              {
+                "key": "X-Confirm",
+                "value": "{{confirm_token}}"
+              }
             ],
             "url": "{{spring_base_url}}/Eliminar_Pedido?idPedido={{pedido_id}}"
           }

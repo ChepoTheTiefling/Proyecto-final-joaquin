@@ -5,7 +5,7 @@ import com.example.demo.objects.BlockchainTxResult;
 public interface BlockchainNftGateway {
     BlockchainTxResult mintAuthorizationToken(String ownerAddress, String tokenUri, int pedidoId);
 
-    String transferAuthorizationToken(long chainTokenId, String fromAddress, String toAddress);
+    String transferAuthorizationToken(long chainTokenId, String fromAddress, String toAddress, String senderPrivateKey);
 
-    String burnAuthorizationToken(long chainTokenId, String ownerAddress);
+    String burnAuthorizationToken(long chainTokenId, String ownerAddress, String senderPrivateKey);
 }

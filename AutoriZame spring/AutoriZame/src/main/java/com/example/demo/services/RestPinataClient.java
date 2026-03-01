@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.objects.PinataUploadResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import java.util.Map;
 public class RestPinataClient implements PinataClient {
 
     private final RestClient restClient;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public RestPinataClient(@Value("${wrappers.pinata.base-url}") String baseUrl) {
         this.restClient = RestClient.builder()
@@ -25,10 +27,14 @@ public class RestPinataClient implements PinataClient {
     public PinataUploadResult uploadJson(String fileName, String jsonContent) {
         try {
             @SuppressWarnings("unchecked")
+            Map<String, Object> payload = OBJECT_MAPPER.readValue(jsonContent, Map.class);
+            System.out.println("[SPRING->IPFS] subirMetadata file=" + fileName + " idPedido=" + payload.get("idPedido"));
+
+            @SuppressWarnings("unchecked")
             Map<String, Object> response = restClient.post()
                     .uri("/subirMetadata")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(jsonContent)
+                    .body(payload)
                     .retrieve()
                     .body(Map.class);
 
@@ -36,6 +42,7 @@ public class RestPinataClient implements PinataClient {
             result.setCid(readAsString(response, "cid"));
             result.setIpfsUrl(readAsString(response, "ipfsUrl"));
             result.setTokenUri(readAsString(response, "tokenUri"));
+            System.out.println("[SPRING<-IPFS] cid=" + result.getCid() + " tokenUri=" + result.getTokenUri());
             return result;
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo subir metadata usando ms_wrapper_ipfs", ex);

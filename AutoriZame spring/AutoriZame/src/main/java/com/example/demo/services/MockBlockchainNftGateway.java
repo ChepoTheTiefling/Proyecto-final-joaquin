@@ -22,12 +22,12 @@ public class MockBlockchainNftGateway implements BlockchainNftGateway {
     }
 
     @Override
-    public String transferAuthorizationToken(long chainTokenId, String fromAddress, String toAddress) {
+    public String transferAuthorizationToken(long chainTokenId, String fromAddress, String toAddress, String senderPrivateKey) {
         return randomTxHash("transfer", String.valueOf(chainTokenId), fromAddress, toAddress);
     }
 
     @Override
-    public String burnAuthorizationToken(long chainTokenId, String ownerAddress) {
+    public String burnAuthorizationToken(long chainTokenId, String ownerAddress, String senderPrivateKey) {
         return randomTxHash("burn", String.valueOf(chainTokenId), ownerAddress);
     }
 
